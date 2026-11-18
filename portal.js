@@ -85,9 +85,15 @@ class PassagePortal extends HTMLElement {
     this.onclick = e => this.act(e);
     this.onchange = e => { if(e.target.matches('[data-continue]'))this.continueAudio=e.target.checked; };
     this.paint();
+    this.querySelector('.portal-stage')?.addEventListener('animationend',event=>{
+      if(event.animationName==='door-opening')this.classList.remove('portal-first-arrival');
+    });
     portalBookText(this.reading.bookId).then(data => {
       this.text = data[this.reading.chapter] || {};
-      if (this.isConnected && !this.querySelector('audio') && !this.querySelector('.well-answer p') && this.topic === 'cena' && !this.translation) this.panel();
+      if (this.isConnected && !this.querySelector('audio') && !this.querySelector('.well-answer p') && this.topic === 'cena' && !this.translation) {
+        this.panel();
+        if(this.pendingVerse){this.revealVerse(this.pendingVerse,true);this.pendingVerse=null;}
+      }
     });
     this.onkeydown = event => {
       if (event.target.closest('select, textarea, input, video, audio, .portal-map')) return;
@@ -124,12 +130,29 @@ class PassagePortal extends HTMLElement {
       <button class="portal-pin" data-p="inspect" aria-expanded="false"><i aria-hidden="true"></i>${esc(this.detail?.[0] || 'Observar o trecho')}</button>
       <div class="portal-caption"><small>${scene.thematic?'Ambientação temática':'Cena interpretativa'} · IA</small><h3>${esc(this.guide?.title || this.part.title)}</h3>
       <div class="portal-pages"><button aria-label="Cena anterior" data-p="prev" ${this.index?'':'disabled'}>←</button><span>Cena ${this.index+1} de ${this.parts.length}</span><button aria-label="Próxima cena" data-p="next" ${this.index+1===this.parts.length?'disabled':''}>→</button></div><div class="portal-film" aria-label="Escolher cena">${this.parts.map((p,i)=>`<button data-p="frame" data-i="${i}" aria-label="Cena ${i+1}. ${esc(p.title)}" aria-pressed="${this.index===i}"><img alt="" loading="lazy" src="./scenes/${esc(passageScene(this.reading,p).file)}"><span>${p.from}–${p.to}</span></button>`).join('')}</div></div></div>
-      <div class="portal-study"><nav aria-label="Investigar a cena">${buttons(primary)}</nav><details class="portal-more" ${secondary.some(([id])=>id===this.topic)?'open':''}><summary>Época, ${this.guide?'palavra-chave':'livro'} e mais</summary><nav aria-label="Aprofundar o estudo">${buttons(secondary)}</nav></details><div class="portal-note" tabindex="-1"></div></div>`;
+      <div class="portal-study"><div class="portal-lead"></div><nav aria-label="Investigar a cena">${buttons(primary)}</nav><details class="portal-more" ${secondary.some(([id])=>id===this.topic)?'open':''}><summary>Época, ${this.guide?'palavra-chave':'livro'} e mais</summary><nav aria-label="Aprofundar o estudo">${buttons(secondary)}</nav></details><div class="portal-note" tabindex="-1"></div></div>`;
     this.panel();
+  }
+  revealVerse(number, compare=false){
+    const row=this.querySelector(`[data-study-verse="${number}"]`);
+    if(!row)return;
+    this.returnVerse=number;
+    row.closest('details').open=true;
+    if(row.getAttribute('aria-expanded')!=='true')row.click();
+    if(compare){
+      const other=row.closest('.verse-row').querySelector('.lexical-discovery details');
+      if(other)other.open=true;
+    }
+    row.focus({preventScroll:true});row.scrollIntoView({block:'center'});
+    row.classList.remove('verse-returned');void row.offsetWidth;row.classList.add('verse-returned');
   }
   panel() {
     const el = this.querySelector('.portal-note');
     this.disposeAtlas();
+    const lead=this.querySelector('.portal-lead');
+    const active=this.data.discoveries?.find(entry=>entry.start===this.part.from);
+    const verse=this.returnVerse || active?.verse || this.part.from;
+    lead.innerHTML=this.topic==='cena'?'':`<button data-p="return-text">← ${studyLanguage(['Voltar a','Back to'])} ${esc(ref(this.reading))}:${verse}</button>`;
     const full = ['estudiosos','panorama','livro','contexto','pratica','editorial','filme'].includes(this.topic);
     this.classList.toggle('study-wide',full || ['mapa','ecos'].includes(this.topic));
     el.classList.toggle('study-paper',full);
@@ -172,7 +195,15 @@ class PassagePortal extends HTMLElement {
     const discovery=this.data.discoveries?.find(entry=>entry.start===p.from && entry.end===p.to);
     const exploreWord=discovery?`<button class="scene-word" data-p="lexical" data-i="${discovery.verse}"><span>${esc(studyLanguage(['Descobrir a palavra','Explore the word']))} · v. ${discovery.verse}</span> ${wordForm(discovery)} →</button>`:'';
     const lines = Array.from({length:p.to-p.from+1},(_,i)=>this.translation?.verses?.[p.from+i-1] || this.text?.[p.from+i]);
-    el.innerHTML = `<small>${esc(this.detail?.[2] || ref(this.reading)+' · v. '+p.from+'–'+p.to)}</small>${this.guide ? `<h4>${esc(this.guide.question)}</h4><div class="well-choices">${this.guide.choices.map(([label],i)=>`<button data-p="discover" data-i="${i}">${esc(label)} →</button>`).join('')}</div><div class="well-answer" aria-live="polite"></div><button data-p="guide-audio">▷ Ouvir guia em português</button><label class="scene-autoplay"><input type="checkbox" data-continue ${this.continueAudio?'checked':''}> Continuar nas próximas cenas</label>` : `<h4>Dentro do trecho</h4><p>${esc(p.explanation)}</p>`}${evidence}${lines.some(Boolean)?exploreWord:''}${lines.some(Boolean)?`<details><summary>Ler o texto · ${esc(this.translation?.versionName || 'Bíblia Portuguesa Mundial')}</summary><p class="verse-hint">Toque em um versículo para consultar o estudo.</p>${lines.map((v,i)=>`<div class="verse-row">${interactiveVerse(p.from+i,v,this.data)}</div>`).join('')}</details>`:''}`;
+    if(discovery && lines[discovery.verse-p.from]){
+      const text=lines[discovery.verse-p.from];
+      const note=fieldNote(this.data,discovery.verse);
+      const parallel=discovery.parallel;
+      const nearby=parallel?.[0]===this.reading.bookId && parallel[1]===this.reading.chapter && parallel[2]>=p.from && parallel[2]<=p.to;
+      const compareText=nearby && lines[parallel[2]-p.from];
+      lead.innerHTML=`<article class="arrival-verse"><small>${esc(ref(this.reading))}:${discovery.verse} · ${esc(this.translation?.versionName || (ENGLISH?'World English Bible':'Bíblia Portuguesa Mundial'))}</small><blockquote>${highlightedText(text,discoveryAnchor(text,discovery))}</blockquote>${compareText?`<details ${text.length+compareText.length<300?'open':''}><summary>${esc(ref(this.reading))}:${parallel[2]}</summary><p>${highlightedText(compareText,discoveryAnchor(compareText,{gloss:discovery.parallelGloss,pt:discovery.parallelPt}))}</p></details>`:''}${note?`<p>${esc(studyLanguage(note.question))}</p>`:this.reading.bookId===20&&this.reading.chapter===1&&discovery.verse===4?`<p>${studyLanguage(['Como o versículo 7 aprofunda a ideia de conhecimento do versículo 4?','How does verse 7 develop the idea of knowledge in verse 4?'])}</p>`:''}${exploreWord}</article>`;
+    }
+    el.innerHTML = `<small>${esc(this.detail?.[2] || ref(this.reading)+' · v. '+p.from+'–'+p.to)}</small>${this.guide ? `<h4>${esc(this.guide.question)}</h4><div class="well-choices">${this.guide.choices.map(([label],i)=>`<button data-p="discover" data-i="${i}">${esc(label)} →</button>`).join('')}</div><div class="well-answer" aria-live="polite"></div><button data-p="guide-audio">▷ Ouvir guia em português</button><label class="scene-autoplay"><input type="checkbox" data-continue ${this.continueAudio?'checked':''}> Continuar nas próximas cenas</label>` : `<h4>Dentro do trecho</h4><p>${esc(p.explanation)}</p>`}${evidence}${lines.some(Boolean)?`<details><summary>Ler o texto · ${esc(this.translation?.versionName || 'Bíblia Portuguesa Mundial')}</summary><p class="verse-hint">Toque em um versículo para consultar o estudo.</p>${lines.map((v,i)=>`<div class="verse-row">${interactiveVerse(p.from+i,v,this.data)}</div>`).join('')}</details>`:''}`;
   }
   atlas(el) {
     const places = this.data.places || [];
@@ -305,9 +336,9 @@ class PassagePortal extends HTMLElement {
       dialog.addEventListener('close',()=>{ this.index=dialog.firstElementChild.index; this.topic=inner.topic; dialog.remove(); copyView(inner,this); this.disposeAtlas(); this.atlasView=inner.atlasView; document.body.classList.remove('portal-open'); this.paint(); (origin?.isConnected ? origin : this.querySelector('[data-p="expand"]')).focus({preventScroll:true}); },{once:true});
       dialog.showModal(); dialog.querySelector('[data-p="expand"]').focus(); return;
     }
-    if (action === 'frame') { this.index=Number(b.dataset.i); this.paint(); this.querySelector('[data-p="frame"][aria-pressed="true"]').focus({preventScroll:true});return; }
+    if (action === 'frame') { this.index=Number(b.dataset.i); this.returnVerse=null; this.paint(); this.querySelector('[data-p="frame"][aria-pressed="true"]').focus({preventScroll:true});return; }
     if (action === 'prev' || action === 'next') {
-      this.index += action === 'prev' ? -1 : 1; this.paint();
+      this.index += action === 'prev' ? -1 : 1; this.returnVerse=null; this.paint();
       (this.querySelector(`[data-p="${action}"]:enabled`) || this.querySelector('[data-p="inspect"]')).focus({preventScroll:true});return;
     }
     if (action === 'inspect' || action === 'hide-note') {
@@ -337,9 +368,12 @@ class PassagePortal extends HTMLElement {
       this.querySelector('.well-answer').innerHTML = `<p>${esc(this.guide.choices[Number(b.dataset.i)][1])}</p><small>${esc(this.guide.source)}</small>`;
       return;
     }
+    if(action==='return-text'){
+      const verse=this.returnVerse || this.data.discoveries?.find(e=>e.start===this.part.from)?.verse || this.part.from;
+      this.topic='cena';this.paint();this.revealVerse(verse);return;
+    }
     if(action==='lexical'){
-      const row=this.querySelector(`[data-study-verse="${Number(b.dataset.i)}"]`);
-      if(row){row.closest('details').open=true;if(row.getAttribute('aria-expanded')!=='true')row.click();row.focus();}
+      this.revealVerse(Number(b.dataset.i),true);
       return;
     }
     if(action==='verse-place'){this.atlasPlace=b.dataset.place;this.returnVerse=Number(b.dataset.returnVerse);this.querySelector('[data-p="mapa"]').click();return;}
@@ -366,6 +400,7 @@ async function enterLibraryPortal(trigger, initialReading, restore=null) {
   const body=document.createElement('div');body.className='library-portal-body';
   dialog.append(toolbar,body);
   let revision=0;
+  let firstArrival=true;
   async function load(reading){
     const request=++revision;
     rememberReading(reading);
@@ -375,12 +410,17 @@ async function enterLibraryPortal(trigger, initialReading, restore=null) {
     toolbar.querySelector('[data-step="-1"]').disabled=reading.bookId===1 && reading.chapter===1;
     toolbar.querySelector('[data-step="1"]').disabled=reading.bookId===66 && reading.chapter===book(66).chapters;
     dialog.setAttribute('aria-label',ref(reading));
-    body.innerHTML='<p class="loading" role="status">Carregando o capítulo…</p>';
+    if(!restore && location.hash.startsWith('#study=')){
+      const url=new URL(location.href);url.hash='';history.replaceState(history.state,'',url);
+    }
+    body.innerHTML=`<div class="portal-loading" role="status"><img alt="" src="./scenes/${esc(browseCover().file)}"><span>${esc(ref(reading))}</span></div>`;
     try{
       const [data,profile]=await Promise.all([getJson('/api/library/'+key(reading).replace(':','/')),getJson('/api/book-profile/'+reading.bookId).catch(()=>null)]);
       if(!dialog.open || request!==revision)return;
       const scene=document.createElement('passage-portal');scene.reading=reading;scene.data=data;scene.profile=profile;
-      if(restore){scene.dataset.start=String(restore.index || 0);scene.dataset.topic=restore.topic || 'cena';scene.atlasEra=restore.era;scene.atlasPlace=restore.place;restore=null;}
+      if(restore){const verse=Number(restore.verse);const i=data.study.outline.findIndex(p=>verse>=p.from && verse<=p.to);
+        scene.dataset.start=String(i>=0?i:restore.index || 0);scene.pendingVerse=i>=0?verse:null;scene.returnVerse=scene.pendingVerse;scene.dataset.topic=restore.topic || 'cena';scene.atlasEra=restore.era;scene.atlasPlace=restore.place;restore=null;}
+      if(firstArrival){scene.classList.add('portal-first-arrival');firstArrival=false;}
       scene.setAttribute('expanded','');body.replaceChildren(scene);
     }catch{
       if(!dialog.open || request!==revision)return;
@@ -398,13 +438,19 @@ async function enterLibraryPortal(trigger, initialReading, restore=null) {
     const bookId=Number(toolbar.elements.bookId.value),chapter=Number(toolbar.elements.chapter.value);
     if(e.target.name==='language'){
       const scene=body.querySelector('passage-portal');
-      switchLanguage(e.target.value,{bookId,chapter,index:scene?.index,topic:scene?.topic,era:scene?.atlasEra,place:scene?.atlasPlace});return;
+      switchLanguage(e.target.value,{bookId,chapter,index:scene?.index,topic:scene?.topic,era:scene?.atlasEra,place:scene?.atlasPlace,verse:scene?.returnVerse});return;
     }
     load({bookId,chapter:e.target.name==='bookId'?1:chapter});
   };
   toolbar.onsubmit=e=>e.preventDefault();
-  toolbar.querySelector('[data-close]').onclick=()=>dialog.close();
-  dialog.addEventListener('close',()=>{revision++;dialog.remove();document.body.classList.remove('portal-open');trigger.focus({preventScroll:true});},{once:true});
+  function clearSharedReference(){
+    if(location.hash.startsWith('#study=')){const url=new URL(location.href);url.hash='';history.replaceState(history.state,'',url);}
+  }
+  toolbar.querySelector('[data-close]').onclick=()=>{clearSharedReference();dialog.close();};
+  dialog.addEventListener('cancel',clearSharedReference);
+  dialog.addEventListener('close',()=>{revision++;dialog.remove();document.body.classList.remove('portal-open');
+    clearSharedReference();
+    trigger.focus({preventScroll:true});},{once:true});
   document.body.append(dialog);document.body.classList.add('portal-open');dialog.showModal();
   await load(initialReading);
 }

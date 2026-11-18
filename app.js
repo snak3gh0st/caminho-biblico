@@ -240,8 +240,8 @@ function home() {
       <h1>Explore a Bíblia</h1>
       <p>Escolha uma passagem para investigar suas cenas, lugares e conexões.</p>
       <form id="chapter-browser"><label>Livro<select name="bookId">${['old','new'].map(t=>`<optgroup label="${t==='old'?'Antigo Testamento':'Novo Testamento'}">${books.filter(b=>b.testament===t).map(b=>`<option value="${b.id}" ${b.id===browseReading.bookId?'selected':''}>${esc(b.name)}</option>`).join('')}</optgroup>`).join('')}</select></label><label>Capítulo<select name="chapter">${chapterOptions(browseReading)}</select></label><button class="button button-dark" type="submit">Entrar no capítulo <span aria-hidden="true">↗</span></button></form>
-    </div><div class="hero-art hero-raster"><img id="browse-cover" src="./scenes/${esc(browseCover().file)}" alt="${esc(browseCover().alt)}" width="1280" height="720" fetchpriority="high"><span class="catalog-caption"><small>Cena interpretativa · IA</small><strong>${esc(ref(browseReading))}</strong></span></div></section>
-    <details class="book-index"><summary>Índice dos 66 livros</summary><form id="reference-search"><label>Buscar livro ou capítulo<input type="search" id="book-search" autocomplete="off" placeholder="Ex.: Romanos 8"></label><button class="ref-jump" hidden></button></form>${['old','new'].map(t=>`<section data-testament><h2>${t==='old'?'Antigo Testamento':'Novo Testamento'}</h2><div>${books.filter(b=>b.testament===t).map(b=>`<button data-action="choose-book" data-id="${b.id}">${esc(b.name)}</button>`).join('')}</div></section>`).join('')}<p class="book-empty" hidden>Nenhum livro encontrado.</p></details>
+    </div><button type="submit" form="chapter-browser" class="hero-art hero-raster portal-door"><img id="browse-cover" src="./scenes/${esc(browseCover().file)}" alt="${esc(browseCover().alt)}" width="1280" height="720" fetchpriority="high"><span class="catalog-caption"><small>Cena interpretativa · IA</small><strong>${esc(ref(browseReading))}</strong><span class="portal-door-arrow" aria-hidden="true">↗</span></span></button></section>
+    <div id="verse-notebook">${notebookView()}</div><details class="book-index"><summary>Índice dos 66 livros</summary><form id="reference-search"><label>Buscar livro ou capítulo<input type="search" id="book-search" autocomplete="off" placeholder="Ex.: Romanos 8"></label><button class="ref-jump" hidden></button></form>${['old','new'].map(t=>`<section data-testament><h2>${t==='old'?'Antigo Testamento':'Novo Testamento'}</h2><div>${books.filter(b=>b.testament===t).map(b=>`<button data-action="choose-book" data-id="${b.id}">${esc(b.name)}</button>`).join('')}</div></section>`).join('')}<p class="book-empty" hidden>Nenhum livro encontrado.</p></details>
     ${current ? `<section class="continue-card"><div><span class="resume-label">Seu plano atual</span><h2>${esc(planCopy(current).title)}</h2><p>${completed(current)} de ${totalReadings(current)} capítulos lidos</p><div class="progress-track"><span style="width:${percentage(current)}%"></span></div></div><button class="button button-light" data-action="open-plan" data-id="${esc(current.id)}">Continuar leitura <span aria-hidden="true">→</span></button></section>` : ''}
     ${state.plans.length > 1 ? `<section class="section my-plans"><div class="section-heading"><div><h2>Outros planos salvos</h2></div></div><div class="plan-list">${state.plans.slice(1).map(item => `<button class="plan-row" data-action="open-plan" data-id="${esc(item.id)}"><span class="plan-row-icon">✦</span><span class="plan-row-main"><strong>${esc(planCopy(item).title)}</strong><small>${item.days.length} dias · ${completed(item)} de ${totalReadings(item)} capítulos</small></span><span class="plan-row-progress">${percentage(item)}%</span><span aria-hidden="true">→</span></button>`).join('')}</div></section>` : ''}
     <section class="section" id="planos"><div class="section-heading"><div><h2>Planos de leitura</h2></div><a class="text-link" href="#criar">Montar meu plano →</a></div>
@@ -498,6 +498,61 @@ function interactiveVerse(number, text, data) {
   return `<button type="button" class="verse verse-trigger" data-study-verse="${number}" aria-expanded="false">${content}${discovery ? ` <small class="discovery-tag">${esc(studyLanguage(['Palavra original','Original word']))}</small>` : ''}<span aria-hidden="true" class="verse-plus">＋</span></button>`;
 }
 
+const notebookKey='poiema-verse-notebook';
+function notebookEntries(){
+  try{return JSON.parse(localStorage.getItem(notebookKey)) || {};}catch{return {};}
+}
+function discoveryURL(reading,verse){
+  const url=new URL(location.pathname,location.origin);
+  url.searchParams.set('lang',ENGLISH?'en':'pt');
+  url.hash='study='+[reading.bookId,reading.chapter,verse].join('.');
+  return url;
+}
+function notebookView(){
+  const entries=Object.values(notebookEntries()).filter(e=>book(e.bookId)).sort((a,b)=>b.updated-a.updated);
+  if(!entries.length)return '';
+  return `<details class="notebook-list"><summary>${studyLanguage(['Meu caderno','My notebook'])} · ${entries.length}</summary>${entries.map(e=>`<article><a href="${esc(discoveryURL(e,e.verse).href)}" data-notebook-open="${[e.bookId,e.chapter,e.verse].join('.')}">${esc(ref(e))}:${e.verse} ↗</a>${e.note?`<p>${esc(e.note)}</p>`:''}</article>`).join('')}</details>`;
+}
+function discoveryTools(reading,verse){
+  const id=[reading.bookId,reading.chapter,verse].join('.');
+  const entry=notebookEntries()[id];
+  return `<div class="discovery-tools" data-verse-key="${id}"><button type="button" data-share-verse>${studyLanguage(['Compartilhar estudo','Share study'])}</button><details><summary>${entry?studyLanguage(['Minha anotação','My note']):studyLanguage(['Guardar descoberta','Save discovery'])}</summary><form class="discovery-editor">${reading.study?.questions?.[0]?`<p>${esc(reading.study.questions[0])}</p>`:''}<label>${studyLanguage(['Minha observação','My observation'])}<textarea maxlength="4000" rows="3">${esc(entry?.note || '')}</textarea></label><small>${studyLanguage(['Caderno salvo neste navegador.','Notebook saved in this browser.'])}</small><button>${studyLanguage(['Salvar no caderno','Save to notebook'])}</button></form></details><span role="status"></span></div>`;
+}
+document.addEventListener('submit',event=>{
+  const form=event.target.closest('.discovery-editor');
+  if(!form)return;
+  event.preventDefault();
+  const tools=form.closest('[data-verse-key]'), id=tools.dataset.verseKey;
+  const [bookId,chapter,verse]=id.split('.').map(Number);
+  const entries=notebookEntries();
+  entries[id]={bookId,chapter,verse,note:form.querySelector('textarea').value.trim(),updated:Date.now()};
+  try{
+    localStorage.setItem(notebookKey,JSON.stringify(entries));
+    tools.querySelector('summary').textContent=studyLanguage(['Minha anotação','My note']);
+    tools.querySelector('[role=status]').textContent=studyLanguage(['Descoberta salva.','Discovery saved.']);
+    const home=document.querySelector('#verse-notebook');if(home)home.innerHTML=notebookView();
+  }catch{tools.querySelector('[role=status]').textContent=studyLanguage(['O navegador não conseguiu salvar.','Your browser could not save this note.']);}
+});
+document.addEventListener('click',async event=>{
+  const saved=event.target.closest('[data-notebook-open]');
+  if(saved && !event.metaKey && !event.ctrlKey && !event.shiftKey){
+    event.preventDefault();
+    const [bookId,chapter,verse]=saved.dataset.notebookOpen.split('.').map(Number);
+    await enterLibraryPortal(saved,{bookId,chapter},{verse});return;
+  }
+  const share=event.target.closest('[data-share-verse]');
+  if(!share)return;
+  const tools=share.closest('[data-verse-key]'),[bookId,chapter,verse]=tools.dataset.verseKey.split('.').map(Number);
+  const url=discoveryURL({bookId,chapter},verse).href;
+  const status=tools.querySelector('[role=status]');
+  if(navigator.share){
+    try{await navigator.share({title:ref({bookId,chapter})+':'+verse+' · Poiema Bereanos',url});return;}
+    catch(error){if(error.name==='AbortError')return;}
+  }
+  try{await navigator.clipboard.writeText(url);status.textContent=studyLanguage(['Link copiado.','Link copied.']);}
+  catch{status.innerHTML=`<label>${studyLanguage(['Copiar link','Copy link'])}<input readonly value="${esc(url)}"></label>`;status.querySelector('input').select();}
+});
+
 function verseInsight(data, number, verses, inPortal) {
   const place=inPortal && data.places?.find(p=>p.verses?.includes(number));
   const part = data.study.outline.find(p => p.from <= number && p.to >= number);
@@ -513,6 +568,7 @@ function verseInsight(data, number, verses, inPortal) {
   const sources = data.sources || [];
   return `<div class="verse-insight"><small>Estudo com IA</small>
     ${note?`<h4>${esc(studyLanguage(note.question))}</h4><p>${esc(studyLanguage(note.answer))}</p>`:''}
+    ${discoveryTools(data,number)}
     ${wordDiscovery(discoveryAt(data,number))}
     ${note?.original ? `<details><summary>${esc(studyLanguage(['Palavra original','Original word']))}</summary><p><bdi lang="${note.original[2]==='he'?'he':'grc'}">${esc(note.original[0])}</bdi> · ${esc(note.original[1])} · ${esc(studyLanguage(note.original[3]))}</p></details>` : ''}
     ${part ? `<h4>${esc(part.title)}</h4><small>Contexto do trecho · v. ${part.from}–${part.to}</small><p>${esc(part.explanation)}</p>` : ''}
@@ -536,6 +592,10 @@ document.addEventListener('click', event => {
   const data = button.closest('passage-portal')?.data || libraryData;
   if (!data) return;
   const portal=button.closest('passage-portal');
+  if(portal){
+    portal.returnVerse=Number(button.dataset.studyVerse);
+    if(portal.closest('.library-dialog'))history.replaceState(history.state,'',discoveryURL(data,portal.returnVerse));
+  }
   const lines=portal ? portal.translation?.verses : chapterData?.verses;
   const verses=lines ? Object.fromEntries(lines.map((text,i)=>[i+1,text])) : portal?.text;
   row.insertAdjacentHTML('beforeend',verseInsight(data,Number(button.dataset.studyVerse),verses,!!portal));
@@ -771,6 +831,14 @@ async function init() {
      aiReady = status.aiReady; hosted = Boolean(status.hosted); prebuiltStudies = library.studies; versions = translations.versions; bookGuides = guides.guides; passageImages = scenes.passages || {};
     let resume;
     try {resume=JSON.parse(sessionStorage.getItem('poiema-return'));sessionStorage.removeItem('poiema-return');}catch{}
+    const shared=location.hash.match(/^#study=(\d+)\.(\d+)\.(\d+)$/);
+    if(shared && !resume?.portal){
+      const [bookId,chapter,verse]=shared.slice(1).map(Number);
+      if(book(bookId) && chapter>0 && chapter<=book(bookId).chapters && verse>0){
+        render();await customElements.whenDefined('passage-portal');
+        await enterLibraryPortal(document.querySelector('#chapter-browser button'),{bookId,chapter},{verse});return;
+      }
+    }
     if(resume?.planId && state.plans.some(item=>item.id===resume.planId)){
       openPlan(resume.planId,resume.day);if(resume.reading && plan().days[activeDay].readings[resume.reading]){activeReading=resume.reading;loadChapter();}return;
     }
