@@ -151,7 +151,7 @@ async function loadChapter() {
 
 function header() {
   return `<header class="site-header"><div class="header-inner">
-    <button class="brand" data-action="home" aria-label="Ir para início"><span class="brand-mark">✦</span><span>Caminho<span class="brand-dot">.</span></span></button>
+    <button class="brand" data-action="home" aria-label="Poiema Bereanos · início"><span class="brand-mark" aria-hidden="true">✦</span><span>Poiema Bereanos</span></button>
     <nav aria-label="Navegação principal"><button class="nav-link ${view === 'home' ? 'selected' : ''}" data-action="home">Início</button><button class="nav-link ${view === 'plan' ? 'selected' : ''}" data-action="go-plan">Meu estudo</button></nav>
     <span class="status-pill"><span class="status-light ${aiReady || STATIC_MODE ? 'ready' : ''}"></span>${STATIC_MODE ? 'Estudos com IA prontos' : `IA ${aiReady ? 'disponível' : 'a configurar'}`}</span>
   </div></header>`;
@@ -395,7 +395,7 @@ function studyHtml(study, sources) {
   </div>`;
 }
 
-function footer() { return `<footer class="site-footer"><span>✦ Caminho · leitura com intenção</span><span>Traduções abertas com créditos junto ao texto · <a href="./fontes.html">Fontes e licenças</a></span></footer>`; }
+function footer() { return `<footer class="site-footer"><span>✦ Poiema Bereanos · leitura com intenção</span><span>Traduções abertas com créditos junto ao texto · <a href="./fontes.html">Fontes e licenças</a></span></footer>`; }
 function render() {
   document.body.classList.toggle('comparison-open', Boolean(connection));
   $('#app').innerHTML = header() + (message ? `<div class="notice" role="alert">${esc(message)} <button data-action="dismiss" aria-label="Fechar aviso">×</button></div>` : '') + (view === 'plan' ? planView() : home()) + footer() + connectionOverlay();

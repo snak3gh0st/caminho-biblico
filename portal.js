@@ -164,7 +164,7 @@ class PassagePortal extends HTMLElement {
     const map = this.atlasMap = L.map(node,{scrollWheelZoom:false,maxZoom:17});
     this.markers = new Map();
     places.forEach(place=>{
-      const marker = L.circleMarker([place.latitude,place.longitude],{radius:6,color:'#493825',weight:2,fillColor:'#e3bd7c',fillOpacity:1}).addTo(map);
+      const marker = L.circleMarker([place.latitude,place.longitude],{radius:6,color:'#161616',weight:2,fillColor:'#fff',fillOpacity:1}).addTo(map);
       marker.bindTooltip(esc(atlasLabel(place)),{direction:'top'});
       marker.on('click',()=>this.selectPlace(place.name)); this.markers.set(place.name,marker);
     });
@@ -190,7 +190,7 @@ class PassagePortal extends HTMLElement {
       }
       if(historic && this.guide) this.overlay=L.imageOverlay('./scenes/john4-relief.webp',[[31.56,34.68],[33.06,35.82]],{attribution:'Terrain Tiles'}).addTo(map);
       const stops=(narrativeJourneys[key(this.reading)] || []).map(n=>this.markers.get(n)?.getLatLng()).filter(Boolean);
-      if(historic && stops.length>1) this.route=L.polyline(stops,{interactive:false,color:'#925824',weight:2,dashArray:'5 6'}).addTo(map);
+      if(historic && stops.length>1) this.route=L.polyline(stops,{interactive:false,color:'#444',weight:2,dashArray:'5 6'}).addTo(map);
     }
     this.querySelectorAll('[data-p="era"]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.era===era)));
     this.selectPlace(this.atlasPlace);
@@ -201,7 +201,7 @@ class PassagePortal extends HTMLElement {
     const select=this.querySelector('.atlas-picker select');select.value=name;
     const marker=this.markers?.get(name);
     if(marker){
-      this.markers.forEach((m,k)=>m.setStyle({radius:k===name?9:6,fillColor:k===name?'#9d472d':'#e3bd7c'}));
+      this.markers.forEach((m,k)=>m.setStyle({radius:k===name?9:6,weight:k===name?3:2,color:k===name?'#fff':'#161616',fillColor:k===name?'#222':'#fff'}));
       if(center)this.atlasMap.setView(marker.getLatLng(),Math.max(this.atlasMap.getZoom(),8));
       marker.bringToFront().openTooltip();
     }
