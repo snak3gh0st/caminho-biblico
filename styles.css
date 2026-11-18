@@ -520,7 +520,26 @@ button[aria-pressed=true]:not(.verse-trigger),.atlas-switch button[aria-pressed=
  @keyframes return-glow{from{box-shadow:inset 3px 0 #fff;background:#ffffff24}to{box-shadow:none}}
 }
 
-.atlas-comparison{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:.7rem;padding:.9rem;margin:.75rem 0;background:#151515;border:1px solid #454545;border-radius:8px}
-.atlas-comparison div{display:grid;align-content:start;gap:.2rem;min-width:0}.atlas-comparison strong{font:500 1.13rem/1.25 var(--serif);overflow-wrap:anywhere}.atlas-comparison span{font-size:.73rem;color:#ccc}
+/* Then → today: the dots repeat the map's biblical (rust) and present-day (blue) markers. */
+.atlas-comparison{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:start;gap:.55rem .8rem;padding:.9rem;margin:.75rem 0;background:#151515;border:1px solid #454545;border-radius:8px}
+.atlas-comparison div{display:grid;align-content:start;gap:.2rem;min-width:0}.atlas-comparison strong{font:500 1.13rem/1.25 var(--serif);overflow-wrap:anywhere}.atlas-comparison span{font-size:.73rem;line-height:1.4;color:#ccc}
+.atlas-comparison small{display:flex;align-items:center;gap:.4rem;font-size:.68rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#aaa}
+.atlas-comparison small::before{content:"";width:.62rem;height:.62rem;border-radius:50%;border:1.5px solid #fff;flex:none}
+.atlas-then small::before{background:#973e21}.atlas-now small::before{background:#175474}
+.atlas-comparison .atlas-arrow{align-self:center;font-size:1.25rem;color:#8d8d8d}
+.atlas-comparison .atlas-status{grid-column:1/-1;margin:.15rem 0 0;padding-top:.65rem;border-top:1px solid #333;font-size:.78rem;line-height:1.5;color:#cfcfcf}
+.atlas-switch{flex-wrap:wrap}
+/* Before/after slider: only the thumb takes pointer input, so the map still pans. */
+.atlas-compare{position:absolute;inset:0;z-index:450;pointer-events:none;--split:50%}
+.atlas-compare-line{position:absolute;top:0;bottom:0;left:var(--split);width:2px;margin-left:-1px;background:#fff;box-shadow:0 0 0 1px #0007}
+.atlas-compare-tag{position:absolute;top:.65rem;padding:.22rem .55rem;border-radius:999px;background:#141414e8;color:#f2f2f2;font-size:.72rem;font-weight:700;letter-spacing:.02em}
+.atlas-compare-tag[data-side=then]{left:3.3rem}.atlas-compare-tag[data-side=now]{right:.65rem}
+.atlas-compare input{position:absolute;left:0;bottom:2.1rem;width:100%;height:44px;margin:0;padding:0;background:transparent;-webkit-appearance:none;appearance:none;pointer-events:none;outline:none}
+.atlas-compare input::-webkit-slider-runnable-track{height:44px;background:transparent;border:0}
+.atlas-compare input::-moz-range-track{height:44px;background:transparent;border:0}
+.atlas-compare input::-webkit-slider-thumb{-webkit-appearance:none;box-sizing:border-box;pointer-events:auto;width:44px;height:44px;border-radius:50%;border:2px solid #161616;cursor:ew-resize;box-shadow:0 3px 10px #0009;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23161616' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 6l-6 6 6 6M15 6l6 6-6 6'/%3E%3C/svg%3E") center/22px no-repeat}
+.atlas-compare input::-moz-range-thumb{box-sizing:border-box;pointer-events:auto;width:44px;height:44px;border-radius:50%;border:2px solid #161616;cursor:ew-resize;box-shadow:0 3px 10px #0009;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23161616' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 6l-6 6 6 6M15 6l6 6-6 6'/%3E%3C/svg%3E") center/22px no-repeat}
+.atlas-compare input:focus-visible::-webkit-slider-thumb{outline:3px solid #fff;outline-offset:3px}
+.atlas-compare input:focus-visible::-moz-range-thumb{outline:3px solid #fff;outline-offset:3px}
 .atlas-modern-tools{display:flex;align-items:center;flex-wrap:wrap;gap:.8rem;margin:.65rem 0}
 .portal-map .modern-city-label{font-weight:650;border-color:#175474;color:#102c41;background:#fff}

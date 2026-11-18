@@ -48,7 +48,7 @@ const modernPlaces = {
   Galilee:['Galileia','Galileia, norte de Israel','A região estende-se além do lago. O marcador oferece uma referência regional.']
 };
 const wellStops = ['Jerusalem','Sychar','Cana','Capernaum'];
-const portugueseAtlasNames={Ephesus:'Éfeso',Corinth:'Corinto',Nineveh:'Nínive',Babylon:'Babilônia',Philippi:'Filipos',Damascus:'Damasco',Bethlehem:'Belém',Rome:'Roma',Athens:'Atenas',Nazareth:'Nazaré',Jericho:'Jericó',Antioch:'Antioquia',Tarsus:'Tarso',Alexandria:'Alexandria',Egypt:'Egito',Tyre:'Tiro',Sidon:'Sidom'};
+const portugueseAtlasNames={"Egypt":"Egito","Zion":"Sião","Jordan":"Jordão","Babylon":"Babilônia","Canaan":"Canaã","Assyria":"Assíria","Moab":"Moabe","Galilee":"Galileia","Gilead":"Gileade","Chaldea":"Caldeia","Lebanon":"Líbano","Syria":"Síria","Ammon":"Amom","Jericho":"Jericó","Bethel":"Betel","Euphrates":"Eufrates","City of David":"Cidade de Davi","Tyre":"Tiro","Bashan":"Basã","Damascus":"Damasco","Negeb":"Neguebe","Sidon":"Sidom","Sodom":"Sodoma","Ramah":"Ramá","Gath":"Gate","Bethlehem":"Belém","Nazareth":"Nazaré","Hebron":"Hebrom","Great Sea":"Mar Grande","Beersheba":"Berseba","Mount Zion":"Monte Sião","Red Sea":"Mar Vermelho","Gibeah":"Gibeá","Shiloh":"Siló","Nile":"Nilo","Philistia":"Filístia","Arabah":"Arabá","Gibeon":"Gibeom","Midian":"Midiã","Shechem":"Siquém","Hamath":"Hamate","Gomorrah":"Gomorra","Mount Sinai":"Monte Sinai","Macedonia":"Macedônia","Cush":"Cuxe","Dan":"Dã","Mount of Olives":"Monte das Oliveiras","Most Holy Place":"Santo dos Santos","Mizpah":"Mispa","Kadesh-barnea":"Cades-Barneia","Heshbon":"Hesbom","Mount Seir":"Monte Seir","Asia":"Ásia","Holy Place":"Lugar Santo","Mount Carmel":"Monte Carmelo","Persia":"Pérsia","Amalek":"Amaleque","Mount Horeb":"Monte Horebe","Salt Sea":"Mar Salgado","East":"Oriente","Ashdod":"Asdode","Anathoth":"Anatote","Ephesus":"Éfeso","Nineveh":"Nínive","Lachish":"Laquis","Mount Hermon":"Monte Hermom","Tarshish":"Társis","Ekron":"Ecrom","Kiriath-jearim":"Quiriate-Jearim","Kidron":"Cedrom","Tekoa":"Tecoa","Sheba":"Sabá","Ophir":"Ofir","Ashkelon":"Asquelom","Aram":"Arã","Libnah":"Libna","Meribah":"Meribá","Caesarea":"Cesareia","Susa":"Susã","Elam":"Elão","Megiddo":"Megido","Valley of Hinnom":"Vale de Hinom","Bethany":"Betânia","Rome":"Roma","Sea of Galilee":"Mar da Galileia","Rabbah":"Rabá","Cyprus":"Chipre","Bozrah":"Bozra","Ziklag":"Ziclague","Carmel":"Carmelo","Achaia":"Acaia","Haran":"Harã","Antioch":"Antioquia","Babylonia":"Babilônia","Wilderness of Sinai":"Deserto do Sinai","Thessalonica":"Tessalônica","Greece":"Grécia","Shinar":"Sinear","Beth-shemesh":"Bete-Semes","Jabesh-gilead":"Jabes-Gileade","Paran":"Parã","Succoth":"Sucote","Arabia":"Arábia","Mahanaim":"Maanaim","Brook of Egypt":"Ribeiro do Egito","Beyond the River":"Além do Rio","Bethsaida":"Betsaida","Cyrene":"Cirene","Goshen":"Gósen","Paddan-aram":"Padã-Arã","Kedar":"Quedar","Cilicia":"Cilícia","Sharon":"Sarom","Joppa":"Jope","Galatia":"Galácia","Adullam":"Adulão","Ethiopia":"Etiópia","Media":"Média","Hormah":"Hormá","Beth-horon":"Bete-Horom","Aphek":"Afeque","Ramoth-gilead":"Ramote-Gileade","Mesopotamia":"Mesopotâmia","Mount Tabor":"Monte Tabor","Valley of the Arnon":"Vale do Arnom","Valley of Rephaim":"Vale de Refaim","Memphis":"Mênfis","Corinth":"Corinto","Plains of Moab":"Planícies de Moabe","Teman":"Temã","Shittim":"Sitim","Azekah":"Azeca","Valley of Jezreel":"Vale de Jezreel","Mount Gilboa":"Monte Gilboa","Engedi":"En-Gedi","Michmash":"Micmás","Aijalon":"Aijalom","Tirzah":"Tirza","Ezion-geber":"Eziom-Geber","Arnon":"Arnom","Dibon":"Dibom","Pisgah":"Pisga","Mamre":"Manre","Valley of Salt":"Vale do Sal","Massah":"Massá","Zoan":"Zoã","Tahpanhes":"Tafnes","Pamphylia":"Panfília","Laodicea":"Laodiceia","Philippi":"Filipos","Shunem":"Suném","Kishon":"Quisom","Jabbok":"Jaboque","Siloam":"Siloé","Fish Gate":"Porta do Peixe","Golgotha":"Gólgota","Valley of Achor":"Vale de Acor","Heliopolis":"Heliópolis","Machpelah":"Macpela","Troas":"Trôade","Iconium":"Icônio","Phoenicia":"Fenícia","Tarsus":"Tarso","Benjamin Gate":"Porta de Benjamim","Topheth":"Tofete","Mount Hor":"Monte Hor","Crete":"Creta","Italy":"Itália","Pontus":"Ponto","Libya":"Líbia","Thebes":"Tebas","Thyatira":"Tiatira","Caesarea Philippi":"Cesareia de Filipe","Fair Havens":"Bons Portos","Smyrna":"Esmirna","Pergamum":"Pérgamo","Sardis":"Sardes","Philadelphia":"Filadélfia","Colossae":"Colossos","Beroea":"Bereia","Berea":"Bereia","Athens":"Atenas","Lystra":"Listra","Miletus":"Mileto","Emmaus":"Emaús","Bethphage":"Betfagé","Gethsemane":"Getsêmani","Nain":"Naim","Chorazin":"Corazim","Tiberias":"Tiberíades","Decapolis":"Decápolis","Idumea":"Idumeia","Perga":"Perge","Seleucia":"Selêucia","Salamis":"Salamina","Neapolis":"Neápolis","Amphipolis":"Anfípolis","Apollonia":"Apolônia","Cenchreae":"Cencreia","Lydda":"Lida","Azotus":"Azoto","Mount Moriah":"Monte Moriá","Moriah":"Moriá","Eden":"Éden","Ararat":"Ararate","Alexandria":"Alexandria","Syracuse":"Siracusa","Puteoli":"Putéoli","Rhegium":"Régio","Antipatris":"Antipátride","Attalia":"Atália","Mount Ebal":"Monte Ebal","Jezreel":"Jezreel","Sea of Chinnereth":"Mar de Quinerete","Chinnereth":"Quinerete"};
 function atlasLabel(place) { return modernPlaces[place.name]?.[0] || (!ENGLISH && portugueseAtlasNames[place.name]) || place.name; }
 
 let modernAtlas, modernAtlasRequest;
@@ -68,13 +68,59 @@ function loadModernAtlas() {
 function countryLabel(code,lang=ENGLISH?'en':'pt'){
   return new Intl.DisplayNames([lang],{type:'region'}).of(code);
 }
+// Areas whose sovereignty is contested are described without assigning a country.
+const atlasAreas={
+  jerusalem:{name:['Jerusalém','Jerusalem'],detail:['Status internacional disputado','Disputed international status'],note:['Israel administra toda a cidade; os palestinos reivindicam a parte oriental, onde fica a Cidade Velha.','Israel administers the whole city; Palestinians claim the eastern part, which includes the Old City.']},
+  golan:{name:['Colinas de Golã','Golan Heights'],detail:['Status internacional disputado','Disputed international status'],note:['Administradas por Israel desde 1967; a ONU as considera território sírio.','Administered by Israel since 1967; the UN regards them as Syrian territory.']},
+  westbank:{name:['Cisjordânia','West Bank'],detail:['Territórios Palestinos','Palestinian Territories']},
+  gaza:{name:['Faixa de Gaza','Gaza Strip'],detail:['Territórios Palestinos','Palestinian Territories']}
+};
+const placeTypes={City:['Cidade','City'],Landmark:['Marco','Landmark'],Mountain:['Monte','Mountain'],Valley:['Vale','Valley'],Island:['Ilha','Island'],Region:['Região','Region'],Water:['Mar, rio ou fonte','Sea, river or spring'],Path:['Caminho','Route']};
+// A nearby town helps only for a point-like site. Seas, regions and camp stations
+// get the present-day country or territory instead of a misleading "city".
+const pointLikePlace=p=>['City','Landmark','Mountain','Valley','Island'].includes(p.type);
+function modernTerritory(geo){
+  if(!geo)return null;
+  const area=atlasAreas[geo.area];
+  if(area)return {key:geo.area,name:studyLanguage(area.name),detail:studyLanguage(area.detail),note:area.note&&studyLanguage(area.note),disputed:!!area.note};
+  if(geo.country)return {key:geo.country,name:countryLabel(geo.country)};
+  return null;
+}
+function cityTerritory(geo){
+  const area=atlasAreas[geo.cityArea];
+  return {key:geo.cityArea || geo.cityCountry,name:area?studyLanguage(area.name):countryLabel(geo.cityCountry)};
+}
+// The biblical point lies inside the present-day city, so a second marker would mislead.
+const insideModernJerusalem=geo=>geo?.area==='jerusalem' && geo.city==='Jerusalem';
+function modernCityTag(geo){
+  const area=atlasAreas[geo.cityArea];
+  if(geo.cityArea==='jerusalem')return geo.city==='Jerusalem'?'Jerusalem':geo.city+' · Jerusalem';
+  return geo.city+' · '+(area?area.name[1]:countryLabel(geo.cityCountry,'en'));
+}
 function modernComparison(p, geo){
   if(!geo)return '';
-  const country=countryLabel(geo.country || geo.cityCountry);
+  const territory=modernTerritory(geo), kind=placeTypes[p.type];
   const distance=new Intl.NumberFormat(ENGLISH?'en':'pt-BR',{maximumFractionDigits:1}).format(geo.km);
-  return `<div class="atlas-comparison"><div><small>${studyLanguage(['Lugar bíblico','Biblical place'])}</small><strong>${esc(atlasLabel(p))}</strong></div>
-    <div><small>${studyLanguage(['Cidade atual de referência','Present-day reference city'])}</small><strong lang="en">${esc(geo.city)}</strong><span>≈ ${distance} km · ${studyLanguage(['em linha reta','straight-line distance'])}</span></div>
-    <div><small>${geo.country?studyLanguage(['País ou território do marcador','Country or territory at the marker']):studyLanguage(['País da cidade de referência','Country of the reference city'])}</small><strong>${esc(country)}</strong></div></div>`;
+  const span=text=>text?`<span>${esc(text)}</span>`:'';
+  let now;
+  if(insideModernJerusalem(geo)){
+    now=`<strong>${esc(territory.name)}</strong>${span(territory.detail)}${span(studyLanguage(['Dentro da cidade atual','Within the present-day city']))}`;
+  }else if(pointLikePlace(p)){
+    const town=cityTerritory(geo), where=territory || town;
+    const nearby=`≈\u00a0${distance}\u00a0km`;
+    // Lead with the town when it is close and in the same country or territory as the point.
+    if(geo.km<=25 && where.key===town.key)
+      now=`<strong lang="en">${esc(geo.city)}</strong>${span([where.name,where.detail].filter(Boolean).join(' · '))}${span(studyLanguage(['Cidade de referência','Reference city'])+' · '+nearby)}`;
+    else
+      now=`<strong>${esc(where.name)}</strong>${span(where.detail)}${span(`${studyLanguage(['Cidade de referência:','Reference city:'])} ${geo.city} (${town.name}) · ${nearby}`)}`;
+  }else if(territory){
+    now=`<strong>${esc(territory.name)}</strong>${span(territory.detail)}${span(studyLanguage(p.type==='Water'?['O ponto marca um trecho da água, não uma cidade.','The point marks part of the water, not a town.']:['O marcador é uma referência; a área antiga era mais ampla.','The marker is a reference; the ancient area was wider.']))}`;
+  }else{
+    now=`<strong>${studyLanguage(['Mar ou costa','Sea or coast'])}</strong>${span(studyLanguage(['O ponto fica fora de uma fronteira terrestre. Use o mapa para ver os países ao redor.','The point lies outside a land border. Use the map to see the surrounding countries.']))}`;
+  }
+  return `<div class="atlas-comparison"><div class="atlas-then"><small>${studyLanguage(['Então','Then'])}</small><strong>${esc(atlasLabel(p))}</strong>${kind?`<span>${esc(studyLanguage(kind))} · ${studyLanguage(['lugar bíblico','biblical place'])}</span>`:''}</div>
+    <span class="atlas-arrow" aria-hidden="true">→</span>
+    <div class="atlas-now"><small>${studyLanguage(['Hoje','Today'])}</small>${now}</div>${territory?.disputed?`<p class="atlas-status">${esc(territory.note)}</p>`:''}</div>`;
 }
 
 let modernRenderer;
@@ -157,7 +203,7 @@ class PassagePortal extends HTMLElement {
       <button class="portal-pin" data-p="inspect" aria-expanded="false"><i aria-hidden="true"></i>${esc(this.detail?.[0] || 'Observar o trecho')}</button>
       <div class="portal-caption"><small>${scene.thematic?'Ambientação temática':'Cena interpretativa'} · IA</small><h3>${esc(this.guide?.title || this.part.title)}</h3>
       <div class="portal-pages"><button aria-label="Cena anterior" data-p="prev" ${this.index?'':'disabled'}>←</button><span>Cena ${this.index+1} de ${this.parts.length}</span><button aria-label="Próxima cena" data-p="next" ${this.index+1===this.parts.length?'disabled':''}>→</button></div><div class="portal-film" aria-label="Escolher cena">${this.parts.map((p,i)=>`<button data-p="frame" data-i="${i}" aria-label="Cena ${i+1}. ${esc(p.title)}" aria-pressed="${this.index===i}"><img alt="" loading="lazy" src="./scenes/${esc(passageScene(this.reading,p).file)}"><span>${p.from}–${p.to}</span></button>`).join('')}</div></div></div>
-      <div class="portal-study"><div class="portal-lead"></div><nav aria-label="Investigar a cena">${buttons(primary)}</nav><details class="portal-more" ${secondary.some(([id])=>id===this.topic)?'open':''}><summary>Época, ${this.guide?'palavra-chave':'livro'} e mais</summary><nav aria-label="Aprofundar o estudo">${buttons(secondary)}</nav></details><div class="portal-note" tabindex="-1"></div></div>`;
+      <div class="portal-study"><div class="portal-lead"></div><nav aria-label="Investigar a cena">${buttons(primary)}</nav><details class="portal-more" ${secondary.some(([id])=>id===this.topic)?'open':''}><summary>Época, ${this.guide?studyLanguage(['palavra-chave','keyword']):studyLanguage(['livro','book'])} e mais</summary><nav aria-label="Aprofundar o estudo">${buttons(secondary)}</nav></details><div class="portal-note" tabindex="-1"></div></div>`;
     this.panel();
   }
   revealVerse(number, compare=false){
@@ -237,7 +283,7 @@ class PassagePortal extends HTMLElement {
     if (!places.length) { el.innerHTML='<h4>Lugares do capítulo</h4><p>Este capítulo não tem lugares com coordenadas na base geográfica.</p>'; return; }
     const selected = places.find(p=>atlasOptionKey(p,places)===this.atlasPlace) || places.find(p=>p.name===this.atlasPlace && p.verses?.includes(this.returnVerse)) || places.find(p=>p.name===this.atlasPlace) || places.find(p=>p.name===wellStops[this.guide?.place]) || places[0];
     this.atlasPlace = atlasOptionKey(selected,places);
-    el.innerHTML = `<h4>${this.guide?'Da Judeia à Galileia':'Lugares de '+esc(ref(this.reading))}</h4><div class="atlas-switch" role="group" aria-label="Época do mapa"><button data-p="era" data-era="antigo">Mapa bíblico</button><button data-p="era" data-era="hoje">Mapa de hoje</button></div><label class="atlas-picker">Localizar<select>${places.map(p=>`<option value="${esc(atlasOptionKey(p,places))}">${esc(atlasLabel(p))}${atlasOptionKey(p,places)!==p.name?' · v. '+esc(p.verses.join(', ')):''}</option>`).join('')}</select></label><div class="atlas-orientation" aria-live="polite"></div><div class="portal-map" aria-label="Atlas interativo"></div><div class="atlas-info" aria-live="polite"></div>`;
+    el.innerHTML = `<h4>${this.guide?'Da Judeia à Galileia':'Lugares de '+esc(ref(this.reading))}</h4><div class="atlas-switch" role="group" aria-label="Época do mapa"><button data-p="era" data-era="antigo">${studyLanguage(['Mapa bíblico','Biblical'])}</button><button data-p="era" data-era="comparar">${studyLanguage(['Antes e hoje','Then & now'])}</button><button data-p="era" data-era="hoje">${studyLanguage(['Mapa de hoje','Today'])}</button></div><label class="atlas-picker">Localizar<select>${places.map(p=>`<option value="${esc(atlasOptionKey(p,places))}">${esc(atlasLabel(p))}${atlasOptionKey(p,places)!==p.name?' · v. '+esc(p.verses.join(', ')):''}</option>`).join('')}</select></label><div class="atlas-orientation" aria-live="polite"></div><div class="portal-map" aria-label="Atlas interativo"></div><div class="atlas-info" aria-live="polite"></div>`;
     const select = el.querySelector('select');
     select.onchange = () => this.selectPlace(select.value,true);
     const node = el.querySelector('.portal-map');
@@ -256,35 +302,66 @@ class PassagePortal extends HTMLElement {
     if(this.atlasView) map.setView(this.atlasView.center,this.atlasView.zoom);
     else if(places.length>1) map.fitBounds(bounds.pad(.18),{maxZoom:10});
     else map.setView(bounds.getCenter(),8);
+    map.on('move zoomend resize',()=>this.clipRelief());
     this.switchEra(this.atlasEra || 'antigo');
     this.selectPlace(this.atlasPlace);
     this.mapResize = new ResizeObserver(()=>map.invalidateSize()); this.mapResize.observe(node);
   }
   switchEra(era) {
+    if(!['antigo','comparar','hoje'].includes(era))era='antigo';
     this.atlasEra=era;
     const map=this.atlasMap;
     if(map){
-      this.base?.remove(); this.route?.remove(); this.overlay?.remove();
-      const historic=era==='antigo';
-      this.modernVector?.remove(); this.modernVector=null;
-      this.base=L.tileLayer(historic?'https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}':'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        {maxNativeZoom:historic?10:17,maxZoom:17,attribution:'Esri, Earthstar Geographics and contributors'}).addTo(map);
-      const currentBase=this.base;
-      if(!historic) loadModernMap().then(()=>{
-        if(this.atlasMap!==map || this.base!==currentBase)return;
-        this.modernVector=L.maplibreGL({style:new URL('./vendor/english-map/liberty-en.json',document.baseURI).href,attributionControl:{customAttribution:'<a href="https://openfreemap.org/">OpenFreeMap</a> · <a href="https://openmaptiles.org/">OpenMapTiles</a> · © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}}).addTo(map);
-      }).catch(()=>{}); // Satellite imagery and English place markers remain usable without WebGL.
-      for(const [id,marker] of this.markers){
-        const name=this.data.places.find(p=>atlasOptionKey(p,this.data.places)===id).name;
-        const show=historic && this.guide ? wellStops.includes(name) : this.markers.size<=6;
-        marker.unbindTooltip().bindTooltip(esc(historic ? atlasLabel({name}) : 'Biblical · '+name),{permanent:show,direction:name==='Cana'?'left':'top'});
+      for(const layer of [this.base,this.route,this.overlay,this.modernVector,this.satellite])layer?.remove();
+      this.base=this.route=this.overlay=this.modernVector=this.satellite=null;
+      this.compareBox?.remove(); this.compareBox=null;
+      const historic=era!=='hoje', present=era!=='antigo', token=this.modernToken=Symbol();
+      // The relief sits above the present-day map, so the comparison only clips one layer.
+      if(historic)this.base=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}',
+        {maxNativeZoom:10,maxZoom:17,zIndex:2,attribution:'Esri, Earthstar Geographics and contributors'}).addTo(map);
+      if(present){
+        // The English vector map names today's countries, cities and roads. Satellite
+        // imagery replaces it only when WebGL or the map library is unavailable.
+        const satellite=()=>{
+          if(this.modernToken!==token || this.atlasMap!==map)return;
+          this.satellite=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            {maxNativeZoom:17,maxZoom:17,zIndex:1,attribution:'Esri, Earthstar Geographics and contributors'}).addTo(map);
+        };
+        loadModernMap().then(()=>{
+          if(this.modernToken!==token || this.atlasMap!==map)return;
+          this.modernVector=L.maplibreGL({style:new URL('./vendor/english-map/liberty-en.json',document.baseURI).href,attributionControl:{customAttribution:'<a href="https://openfreemap.org/">OpenFreeMap</a> · <a href="https://openmaptiles.org/">OpenMapTiles</a> · © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}}).addTo(map);
+        }).catch(satellite);
       }
-      if(historic && this.guide) this.overlay=L.imageOverlay('./scenes/john4-relief.webp',[[31.56,34.68],[33.06,35.82]],{attribution:'Terrain Tiles'}).addTo(map);
+      if(era==='comparar')this.addCompare(map);
+      for(const [id,marker] of this.markers){
+        const place=this.data.places.find(p=>atlasOptionKey(p,this.data.places)===id), name=place.name;
+        const show=era==='antigo' && this.guide ? wellStops.includes(name) : this.markers.size<=6;
+        marker.unbindTooltip().bindTooltip(esc(era==='hoje' ? 'Biblical · '+name : atlasLabel(place)),{permanent:show,direction:name==='Cana'?'left':'top'});
+      }
+      if(era==='antigo' && this.guide) this.overlay=L.imageOverlay('./scenes/john4-relief.webp',[[31.56,34.68],[33.06,35.82]],{attribution:'Terrain Tiles'}).addTo(map);
       const stops=(narrativeJourneys[key(this.reading)] || []).map(n=>this.markers.get(n)?.getLatLng()).filter(Boolean);
       if(historic && stops.length>1) this.route=L.polyline(stops,{interactive:false,color:'#8b542e',weight:2,dashArray:'5 6'}).addTo(map);
     }
     this.querySelectorAll('[data-p="era"]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.era===era)));
     this.selectPlace(this.atlasPlace);
+  }
+  addCompare(map) {
+    const box=this.compareBox=L.DomUtil.create('div','atlas-compare',map.getContainer());
+    box.innerHTML=`<span class="atlas-compare-tag" data-side="then">${studyLanguage(['Bíblico','Biblical'])}</span><span class="atlas-compare-tag" data-side="now">${studyLanguage(['Hoje','Today'])}</span><i class="atlas-compare-line"></i><input type="range" min="0" max="100" step="0.5" value="${this.compareRatio ?? 50}" aria-label="${studyLanguage(['Deslize para comparar o mapa bíblico com o mapa de hoje','Slide to compare the biblical map with the present-day map'])}">`;
+    const range=box.querySelector('input');
+    // Dragging the handle must move the divider, not pan the map underneath.
+    L.DomEvent.disableClickPropagation(range);
+    for(const type of ['pointerdown','mousedown','touchstart','wheel'])range.addEventListener(type,e=>e.stopPropagation(),{passive:true});
+    range.addEventListener('input',()=>{this.compareRatio=Number(range.value);this.clipRelief();});
+    this.clipRelief();
+  }
+  clipRelief() {
+    const map=this.atlasMap, box=this.compareBox, relief=this.base?.getContainer();
+    if(!map || !box || !relief)return;
+    const size=map.getSize(), thumb=44, x=thumb/2+(this.compareRatio ?? 50)/100*Math.max(0,size.x-thumb);
+    const nw=map.containerPointToLayerPoint([0,0]), se=map.containerPointToLayerPoint(size);
+    relief.style.clip=`rect(${nw.y}px, ${nw.x+x}px, ${se.y}px, ${nw.x}px)`;
+    box.style.setProperty('--split',x+'px');
   }
   selectPlace(name, center=false) {
     const p=this.data.places.find(item=>atlasOptionKey(item,this.data.places)===name); if(!p)return;
@@ -296,25 +373,27 @@ class PassagePortal extends HTMLElement {
       if(center)this.atlasMap.setView(marker.getLatLng(),Math.max(this.atlasMap.getZoom(),8));
       marker.bringToFront().openTooltip();
     }
-    const modern=modernPlaces[p.name], today=this.atlasEra==='hoje';
-    const geo=modernAtlas?.[atlasCoordinateKey(p)];
+    const modern=modernPlaces[p.name], era=this.atlasEra, today=era==='hoje';
+    const geo=modernAtlas?.[atlasCoordinateKey(p)], pairCity=era!=='antigo' && geo && pointLikePlace(p) && !insideModernJerusalem(geo);
     this.querySelector('.atlas-orientation').innerHTML=modernComparison(p,geo);
     this.cityLayer?.remove();this.cityLayer=null;
-    if(today && geo && this.atlasMap){
+    if(pairCity && this.atlasMap){
       this.cityLayer=L.layerGroup().addTo(this.atlasMap);
       const cityPoint=[geo.lat,geo.lon];
       L.polyline([[p.latitude,p.longitude],cityPoint],{color:'#194d71',weight:2,dashArray:'4 6',interactive:false}).addTo(this.cityLayer);
       L.circleMarker(cityPoint,{radius:5,weight:2,color:'#fff',fillColor:'#175474',fillOpacity:1}).addTo(this.cityLayer)
-        .bindTooltip(esc(geo.city+' · '+countryLabel(geo.cityCountry,'en')),{permanent:true,direction:'bottom',className:'modern-city-label'});
+        .bindTooltip(esc(modernCityTag(geo)),{permanent:true,direction:'bottom',className:'modern-city-label'});
     }
     const well=this.guide && wellLocations[wellStops.indexOf(p.name)];
-    this.querySelector('.atlas-info').innerHTML=`<small>${today?'Geografia atual':'Geografia da narrativa'} · v. ${esc(p.verses?.join(', '))}</small><h4>${esc(today && modern?modern[1]:atlasLabel(p))}</h4><p>${esc(today ? modern?.[2] || 'O ponto aproxima o lugar citado. Use os nomes e as vias do mapa atual para reconhecer a região.' : well?.[3] || 'Localização aproximada a partir do conjunto History Globe.')}</p>${!today?'<small>Relevo atual com lugares bíblicos. Os trajetos ligam paradas narradas e as fronteiras antigas não estão representadas.</small>':''}<a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&amp;hl=en&amp;query=${p.latitude},${p.longitude}">Ver nos mapas atuais ↗</a>${geo?`<div class="atlas-modern-tools">${today?`<button data-p="city-bounds">${studyLanguage(['Enquadrar os dois pontos','Show both points'])}</button>`:''}<a href="https://www.geonames.org/${esc(geo.id)}/" target="_blank" rel="noopener">GeoNames ↗</a></div>`:''}${this.profile?.dossier?.narratedEra ? `<details><summary>Tempo da narrativa</summary><p>${esc(this.profile.dossier.narratedEra)}</p></details>` : ''}${p.verses?.length ? `<button data-action="focus-verse" data-verse="${p.verses.includes(this.returnVerse)?this.returnVerse:p.verses[0]}">Ler o versículo · ${p.verses.includes(this.returnVerse)?this.returnVerse:p.verses[0]}</button>` : ''}`;
+    const compareNote=studyLanguage(['Arraste o controle sobre o mapa. À esquerda, o relevo com os lugares bíblicos; à direita, os países, as cidades e as estradas de hoje.','Drag the handle across the map. On the left, the relief with biblical places; on the right, today’s countries, cities and roads.']);
+    this.querySelector('.atlas-info').innerHTML=`<small>${era==='comparar'?studyLanguage(['Antes e hoje','Then and now']):today?'Geografia atual':'Geografia da narrativa'} · v. ${esc(p.verses?.join(', '))}</small><h4>${esc(today && modern?modern[1]:atlasLabel(p))}</h4><p>${esc(era==='comparar' ? compareNote : today ? modern?.[2] || 'O ponto aproxima o lugar citado. Use os nomes e as vias do mapa atual para reconhecer a região.' : well?.[3] || 'Localização aproximada a partir do conjunto History Globe.')}</p>${era==='antigo'?'<small>Relevo atual com lugares bíblicos. Os trajetos ligam paradas narradas e as fronteiras antigas não estão representadas.</small>':''}<a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&amp;hl=en&amp;query=${p.latitude},${p.longitude}">Ver nos mapas atuais ↗</a>${geo && pointLikePlace(p)?`<div class="atlas-modern-tools">${pairCity?`<button data-p="city-bounds">${studyLanguage(['Enquadrar os dois pontos','Show both points'])}</button>`:''}<a href="https://www.geonames.org/${esc(geo.id)}/" target="_blank" rel="noopener">${studyLanguage(['Cidade de referência no GeoNames','Reference city on GeoNames'])} ↗</a></div>`:''}${this.profile?.dossier?.narratedEra ? `<details><summary>Tempo da narrativa</summary><p>${esc(this.profile.dossier.narratedEra)}</p></details>` : ''}${p.verses?.length ? `<button data-action="focus-verse" data-verse="${p.verses.includes(this.returnVerse)?this.returnVerse:p.verses[0]}">Ler o versículo · ${p.verses.includes(this.returnVerse)?this.returnVerse:p.verses[0]}</button>` : ''}`;
   }
   disposeAtlas() {
     if(!this.atlasMap)return;
     this.atlasView={center:this.atlasMap.getCenter(),zoom:this.atlasMap.getZoom()};
     this.mapResize?.disconnect(); this.atlasMap.remove();
-    this.atlasMap=this.markers=this.base=this.overlay=this.route=this.modernVector=this.cityLayer=null;
+    this.compareBox?.remove();
+    this.atlasMap=this.markers=this.base=this.overlay=this.route=this.modernVector=this.satellite=this.cityLayer=this.compareBox=null;
   }
   async compare(i, chosen) {
     const target = this.querySelector('.portal-pair'), link = chosen || this.links[i];
