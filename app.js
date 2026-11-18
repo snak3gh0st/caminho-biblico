@@ -270,11 +270,60 @@ function passageScene(reading, part) {
 }
 let narrationActive = false;
 let narrationToken = 0;
-function localPortugueseVoice() {
-  if (typeof window === 'undefined' || !window.speechSynthesis) return null;
-  const voices = window.speechSynthesis.getVoices().filter(voice => voice.localService && /^pt(?:-|_)/i.test(voice.lang));
-  return voices.find(voice => /^pt[-_]BR$/i.test(voice.lang)) || voices[0] || null;
+const NARRATION_STORAGE = 'caminho-narration-v1';
+let narrationPreferences = { voice: '', rate: 1 };
+try {
+  const saved = JSON.parse(localStorage.getItem(NARRATION_STORAGE));
+  if (saved && typeof saved.voice === 'string') narrationPreferences.voice = saved.voice;
+  if (saved && [0.9, 1, 1.1].includes(saved.rate)) narrationPreferences.rate = saved.rate;
+} catch {}
+function voiceIdentifier(voice) { return voice.voiceURI || `${voice.name || ''}|${voice.lang}`; }
+function localPortugueseVoices() {
+  if (typeof window === 'undefined' || !window.speechSynthesis) return [];
+  const characterVoice = /(?:^|[\s.(])(?:eddy|flo|grandma|grandpa|reed|rocko|sandy|shelley|albert|bad news|bahh|bells|boing|bubbles|cellos|whisper|zarvox)(?:$|[\s.)])|eloquence/i;
+  const score = voice => {
+    const name = `${voice.name || ''} ${voice.voiceURI || ''}`;
+    return (/^pt[-_]BR$/i.test(voice.lang) ? 1000 : 0)
+      + (/premium|enhanced|natural|neural|siri/i.test(name) ? 80 : 0)
+      + (/luciana|felipe|fernanda|francisca|ant[oô]nio|thiago|raquel/i.test(name) ? 40 : 0)
+      - (/compact/i.test(name) ? 10 : 0)
+      + (voice.default ? 5 : 0);
+  };
+  return window.speechSynthesis.getVoices()
+    .filter(voice => voice.localService && /^pt(?:-|_)/i.test(voice.lang) && !characterVoice.test(`${voice.name || ''} ${voice.voiceURI || ''}`))
+    .sort((a,b) => score(b) - score(a) || String(a.name || '').localeCompare(String(b.name || ''), 'pt-BR'));
 }
+function localPortugueseVoice() {
+  const voices = localPortugueseVoices();
+  return voices.find(voice => voiceIdentifier(voice) === narrationPreferences.voice) || voices[0] || null;
+}
+function saveNarrationPreferences() {
+  try { localStorage.setItem(NARRATION_STORAGE, JSON.stringify(narrationPreferences)); } catch {}
+}
+function localVoiceControls() {
+  const voices = localPortugueseVoices();
+  const selected = localPortugueseVoice();
+  return `<div class="local-narration-tools"><div class="local-voice-options"><label for="narration-voice">Voz da leitura<select id="narration-voice" ${voices.length?'':'disabled'}>${voices.length?voices.map((voice,index)=>`<option value="${esc(voiceIdentifier(voice))}" ${selected && voiceIdentifier(voice)===voiceIdentifier(selected)?'selected':''}>${esc(voice.name || 'Voz em português')} · ${/^pt[-_]BR$/i.test(voice.lang)?'Brasil':'Portugal'}${index===0?' · Recomendada':''}</option>`).join(''):'<option>Sem voz de leitura em português</option>'}</select></label><label for="narration-rate">Ritmo<select id="narration-rate">${[[0.9,'Mais calmo'],[1,'Natural'],[1.1,'Mais rápido']].map(([rate,label])=>`<option value="${rate}" ${rate===narrationPreferences.rate?'selected':''}>${label}</option>`).join('')}</select></label><button class="button button-outline" data-action="preview-voice" ${selected?'':'disabled'}>Testar voz</button></div><p class="local-voice-note">${selected?'Ouça uma amostra e escolha a voz que prefere. A narração usa a voz instalada no dispositivo, sem chamadas de API.':'Instale uma voz de leitura em português no dispositivo para ativar a narração.'}</p></div>`;
+}
+function previewLocalVoice() {
+  const voice = localPortugueseVoice();
+  if (!voice || typeof window.SpeechSynthesisUtterance !== 'function') return;
+  stopLocalNarration();
+  const token = narrationToken;
+  narrationActive = true; render();
+  const speech = new window.SpeechSynthesisUtterance('Jesus conversa com a mulher samaritana sobre a água viva. Leia com calma, observe o contexto e compare as passagens.');
+  speech.voice = voice; speech.lang = voice.lang; speech.rate = narrationPreferences.rate;
+  const finish = () => { if (token === narrationToken) { narrationActive = false; render(); } };
+  speech.onend = finish; speech.onerror = finish;
+  window.speechSynthesis.speak(speech);
+}
+function updateLocalVoiceControls() {
+  const ready = Boolean(localPortugueseVoice());
+  document.querySelectorAll('[data-action="narrate-part"], [data-action="narrate-chapter"]').forEach(button => { button.disabled = !ready; });
+  const tools = document.querySelector('.local-narration-tools');
+  if (tools) tools.outerHTML = localVoiceControls();
+}
+
 function stopLocalNarration() {
   narrationToken++;
   narrationActive = false;
@@ -293,7 +342,7 @@ function narratePassage(index, entireChapter = false) {
     if (!part) return;
     visualPart = partIndex; narrationActive = true; libraryTab = 'panorama'; render();
     const speech = new window.SpeechSynthesisUtterance(`${ref(reading)}, versículos ${part.from} a ${part.to}. ${part.title}. ${part.explanation}`);
-    speech.voice = voice; speech.lang = voice.lang; speech.rate = .94;
+    speech.voice = voice; speech.lang = voice.lang; speech.rate = narrationPreferences.rate;
     speech.onend = () => {
       if (token !== narrationToken) return;
       if (entireChapter && partIndex + 1 < libraryData.study.outline.length) speakPart(partIndex + 1);
@@ -310,7 +359,7 @@ function visualJourney(reading, data) {
   const index = Math.min(visualPart, parts.length - 1);
   const part = parts[index];
   const scene = passageScene(reading, part);
-  return `<section class="visual-journey" aria-label="Explorar as partes do capítulo"><div class="journey-stage ${sceneMotion?'motion-enabled':''}"><img class="journey-image" src="./scenes/${scene.file}" alt="${esc(scene.alt)}" width="1440" height="810" decoding="async"><div class="journey-caption"><span>${esc(ref(reading))} · v. ${part.from}–${part.to}</span><h3>${esc(part.title)}</h3><div class="journey-controls">${narrationActive?'<button data-action="stop-narration">Parar narração</button>':`<button data-action="narrate-part" ${localPortugueseVoice()?'':'disabled'}>Ouvir trecho</button><button data-action="narrate-chapter" ${localPortugueseVoice()?'':'disabled'}>Ouvir capítulo com as cenas</button>`}<button data-action="scene-motion" aria-pressed="${sceneMotion}">${sceneMotion?'Pausar movimento':'Ativar movimento'}</button><button data-action="focus-verse" data-verse="${part.from}">Ler esta passagem ↓</button></div></div></div><p class="scene-disclosure">${scene.thematic?'Ambientação temática':'Cena interpretativa'} gerada por IA · ${esc(scene.title)} · Ilustração artística, sem precisão arqueológica.</p><p class="local-voice-note">${localPortugueseVoice()?'Narração com a voz local do dispositivo, sem chamadas de API.':'A narração local requer uma voz em português instalada neste dispositivo.'}</p><div class="journey-parts" role="group" aria-label="Partes do capítulo">${parts.map((p,i)=>{const image=passageScene(reading,p);return `<button data-action="visual-part" data-index="${i}" aria-pressed="${index===i}"><img src="./scenes/${image.file}" alt="" loading="lazy" width="160" height="90"><span><small>v. ${p.from}–${p.to}</small><strong>${esc(p.title)}</strong></span></button>`;}).join('')}</div><div class="journey-explanation" aria-live="polite"><p>${esc(part.explanation)}</p></div></section>`;
+  return `<section class="visual-journey" aria-label="Explorar as partes do capítulo"><div class="journey-stage ${sceneMotion?'motion-enabled':''}"><img class="journey-image" src="./scenes/${scene.file}" alt="${esc(scene.alt)}" width="1440" height="810" decoding="async"><div class="journey-caption"><span>${esc(ref(reading))} · v. ${part.from}–${part.to}</span><h3>${esc(part.title)}</h3><div class="journey-controls">${narrationActive?'<button data-action="stop-narration">Parar narração</button>':`<button data-action="narrate-part" ${localPortugueseVoice()?'':'disabled'}>Ouvir trecho</button><button data-action="narrate-chapter" ${localPortugueseVoice()?'':'disabled'}>Ouvir capítulo com as cenas</button>`}<button data-action="scene-motion" aria-pressed="${sceneMotion}">${sceneMotion?'Pausar movimento':'Ativar movimento'}</button><button data-action="focus-verse" data-verse="${part.from}">Ler esta passagem ↓</button></div></div></div><p class="scene-disclosure">${scene.thematic?'Ambientação temática':'Cena interpretativa'} gerada por IA · ${esc(scene.title)} · Ilustração artística, sem precisão arqueológica.</p>${localVoiceControls()}<div class="journey-parts" role="group" aria-label="Partes do capítulo">${parts.map((p,i)=>{const image=passageScene(reading,p);return `<button data-action="visual-part" data-index="${i}" aria-pressed="${index===i}"><img src="./scenes/${image.file}" alt="" loading="lazy" width="160" height="90"><span><small>v. ${p.from}–${p.to}</small><strong>${esc(p.title)}</strong></span></button>`;}).join('')}</div><div class="journey-explanation" aria-live="polite"><p>${esc(part.explanation)}</p></div></section>`;
 }
 function connectionExplorer(reading, data) {
   const verses = [...new Set(data.crossRefs.map(link=>link.fromVerse))].sort((a,b)=>a-b);
@@ -458,6 +507,7 @@ document.addEventListener('click', async event => {
   if (action === 'open-day') { activeDay = Number(target.dataset.index); activeReading = 0; answer = ''; draftQuestion = ''; studyTab = 'panorama'; libraryTab = 'panorama'; selectedMovement = 0; loadChapter(); return scrollToReader(); }
   if (action === 'open-reading') { activeReading = Number(target.dataset.index); answer = ''; draftQuestion = ''; studyTab = 'panorama'; libraryTab = 'panorama'; selectedMovement = 0; loadChapter(); return scrollToReader(); }
   if (action === 'open-deep-study') return $('#estudo-completo')?.scrollIntoView({ behavior:'auto', block:'start' });
+  if (action === 'preview-voice') return previewLocalVoice();
   if (action === 'narrate-part') return narratePassage(visualPart);
   if (action === 'narrate-chapter') return narratePassage(0, true);
   if (action === 'stop-narration') { stopLocalNarration(); return render(); }
@@ -550,6 +600,18 @@ document.addEventListener('input', event => {
 });
 
 document.addEventListener('change', event => {
+  if (event.target.id === 'narration-voice' || event.target.id === 'narration-rate') {
+    stopLocalNarration();
+    if (event.target.id === 'narration-voice') {
+      if (!localPortugueseVoices().some(voice => voiceIdentifier(voice) === event.target.value)) return;
+      narrationPreferences.voice = event.target.value;
+    } else {
+      const rate = Number(event.target.value);
+      if (![0.9, 1, 1.1].includes(rate)) return;
+      narrationPreferences.rate = rate;
+    }
+    saveNarrationPreferences(); render(); document.getElementById(event.target.id)?.focus({preventScroll:true}); return;
+  }
   if (event.target.id === 'version-select') { selectedVersion = event.target.value; if (selectedVersion === compareVersion) compareVersion = Object.keys(versions).find(id => id !== selectedVersion); return loadChapter(); }
   if (event.target.id === 'compare-toggle') { compareEnabled = event.target.checked; if (selectedVersion === compareVersion) compareVersion = Object.keys(versions).find(id => id !== selectedVersion); return loadChapter(); }
   if (event.target.id === 'compare-select') { compareVersion = event.target.value; return loadChapter(); }
@@ -574,10 +636,5 @@ document.addEventListener('keydown', event => {
   else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
 });
 
-if (typeof window !== 'undefined') window.speechSynthesis?.addEventListener?.('voiceschanged', () => {
-  const ready = Boolean(localPortugueseVoice());
-  document.querySelectorAll('[data-action="narrate-part"], [data-action="narrate-chapter"]').forEach(button => { button.disabled = !ready; });
-  const note = document.querySelector('.local-voice-note');
-  if (note) note.textContent = ready ? 'Narração com a voz local do dispositivo, sem chamadas de API.' : 'A narração local requer uma voz em português instalada neste dispositivo.';
-});
+if (typeof window !== 'undefined') window.speechSynthesis?.addEventListener?.('voiceschanged', updateLocalVoiceControls);
 init();
