@@ -258,3 +258,18 @@ body.portal-open {overflow:hidden}
  @keyframes portal-dusk {from{background:transparent}to{background:#10140e}}
  @keyframes portal-reveal {from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 }
+.well-choices {display:grid;gap:.5rem}
+.well-choices button {text-align:left;border-radius:8px;padding:.75rem 1rem}
+.well-choices button[aria-pressed=true] {background:#efddb6;color:#342e23}
+.well-answer:not(:empty) {margin:.9rem 0;padding:.1rem 0 .3rem .85rem;border-left:2px solid #d9b781}
+.well-rule dt {margin-top:1rem;color:#e5c997;font-weight:bold}
+.well-rule dd {margin:.3rem 0;line-height:1.55}
+.well-atlas {position:relative;margin:.8rem auto;width:min(100%,290px);aspect-ratio:207/323;border-radius:10px;overflow:hidden;background:#c1b89e url('./scenes/john4-relief.webp') center / 100% 100%}
+.atlas-north {position:absolute;top:.5rem;left:.6rem;color:#302d20;font-weight:bold;font-size:.75rem}
+.portal-study .well-atlas button {position:absolute;transform:translate(-50%,-50%);height:34px;min-height:34px;width:34px;padding:0;border:none;background:transparent;display:grid;place-items:center}
+.well-atlas i {width:12px;height:12px;border-radius:50%;background:#4e402c;border:2px solid #fff4d6}
+.well-atlas button[aria-pressed=true] i {background:#8a3019;box-shadow:0 0 0 5px #ffc77288}
+.well-atlas button span {position:absolute;top:70%;font-size:.77rem;line-height:1;color:#fff6df;background:#322e24ed;border-radius:4px;padding:.25rem .35rem;white-space:nowrap}
+.well-atlas button:last-child span {top:auto;bottom:72%;right:-.9rem}
+.portal-note .portal-he {text-align:start;font-size:3.1rem;color:#f0d4a1;line-height:1.28;margin:.5rem 0}
+.portal-note [data-p="guide-audio"],.portal-note audio {margin-top:.8rem;max-width:100%}
