@@ -184,7 +184,7 @@ async function loadChapter() {
 
 function header() {
   return `<header class="site-header"><div class="header-inner">
-    <button class="brand" data-action="home" aria-label="Poiema Bereanos · início"><span class="brand-mark" aria-hidden="true">✦</span><span>Poiema Bereanos</span></button>
+    <button class="brand" data-action="home" aria-label="Poiema Bereanos · início"><img class="poiema-logo" src="./media/poiema-logo.jpeg" alt="" width="36" height="36"><span>Poiema Bereanos</span></button>
     <nav aria-label="Navegação principal"><button class="nav-link ${view === 'home' ? 'selected' : ''}" data-action="home">Bíblia</button><button class="nav-link" data-action="browse-plans">Planos</button>${view==='plan'?'<span class="nav-link selected current-study" aria-current="page">Leitura</span>':''}</nav>
     <select class="language-choice" aria-label="Idioma" id="language-choice"><option value="pt" ${ENGLISH?'':'selected'}>Português</option><option value="en" ${ENGLISH?'selected':''}>English</option></select>
   </div></header>`;
@@ -416,23 +416,72 @@ function connectionOverlay() {
 
   return `<div class="connection-overlay" role="presentation"><section class="connection-dialog" role="dialog" aria-modal="true" aria-label="Comparar passagens bíblicas" tabindex="-1"><button class="connection-close" data-action="close-connection" aria-label="Fechar comparação">×</button><span class="eyebrow">CONEXÃO ENTRE TEXTOS</span><h2>${esc(sourceName)} ↔ ${esc(targetName)}</h2><p class="library-intro">Leia cada versículo no contexto do seu capítulo. A referência sugere uma relação para investigar.</p><div class="verse-pair"><article><strong>${esc(sourceName)}</strong><p>${esc(sourceVerse)}</p></article><article><strong>${esc(targetName)}</strong><p>${connection.loading?'Carregando texto…':connection.error?esc(connection.error):esc(targetVerse)}</p></article></div>${contextHtml}<p class="connection-version">Tradução: ${esc(versions[selectedVersion])}</p><div class="connection-actions"><button class="button button-outline" data-action="connection-context" aria-expanded="${Boolean(connection.showContext)}" ${connection.loading || connection.error?'disabled':''}>${connection.showContext?'Recolher contexto':'Ver contexto dos versículos'}</button><button class="button button-outline" data-action="crossref" data-index="${nextIndex}">Próxima conexão →</button><button class="button button-dark" data-action="open-target" ${connection.loading?'disabled':''}>Ler ${esc(book(link.bookId)?.name)} ${link.chapter} →</button><button class="button button-outline" data-action="close-connection">Continuar neste capítulo</button></div></section></div>`;
 }
+const fieldNotes = {
+  '8:2': [{verses:[2,7,15,16], terms:/respig\p{L}*|espigas?|glean\p{L}*/iu,
+    original:['לָקַט','lāqaṭ','he',['colher o que ficou no campo','to glean what remains in a field']],
+    question:['Por que Rute podia recolher espigas?','Why could Ruth glean here?'],
+    answer:['Levítico orienta o agricultor a deixar parte da colheita ao pobre e ao estrangeiro. Releia as ordens de Boaz em Rute 2:15–16. O que ele oferece além de permitir que Rute trabalhe ali?','Leviticus tells landowners to leave some of the harvest for the poor and the foreigner. Reread Boaz’s instructions in Ruth 2:15–16. What does he offer beyond permission to glean?'],
+    link:[3,19,9],end:10, reason:['O costume da colheita em Levítico 19:9–10 esclarece o pedido de Rute.','The harvest instructions in Leviticus 19:9–10 explain Ruth’s request.']}],
+  '41:1': [{verses:[2],terms:/mensageiro|messenger/iu,
+    original:['ἄγγελος','ángelos','gr',['mensageiro','messenger']],
+    question:['Por que Marcos começa com um mensageiro?','Why does Mark open with a messenger?'],
+    answer:['Leia a promessa em Malaquias e depois observe como Marcos apresenta João nos versículos 4–5. Quem prepara o caminho na narrativa?','Read the promise in Malachi, then look at how Mark introduces John in verses 4–5. Who prepares the way in the narrative?'],
+    link:[39,3,1],reason:['Compare o mensageiro enviado e o caminho preparado nas duas passagens.','Compare the messenger being sent and the way being prepared in both passages.']}],
+  '19:1': [{verses:[2],terms:/medita\p{L}*/iu,question:['Por que o poeta aproxima dia e noite?','Why does the poet pair day with night?'],answer:['Leia as duas linhas em voz baixa. A primeira fala do prazer na instrução. A segunda mostra como esse prazer ocupa o tempo do salmista.','Read both lines aloud. The first describes delight in instruction. The second shows how that delight fills the psalmist’s time.']}],
+  '45:8': [{verses:[1],terms:/portanto|therefore/iu,question:['Que argumento leva Paulo a essa conclusão?','What argument leads Paul to this conclusion?'],answer:['Volte ao fim do capítulo 7. Observe a pergunta do versículo 24 e a resposta que começa no 25, antes de reler a abertura do capítulo 8.','Return to the end of chapter 7. Notice the question in verse 24 and the answer beginning in verse 25 before rereading chapter 8.'],link:[45,7,25],reason:['Leia a conclusão do argumento anterior.','Read the conclusion of the preceding argument.']}]
+};
+const studyLanguage = pair => pair[ENGLISH ? 1 : 0];
+function fieldNote(data, n) {return fieldNotes[key(data)]?.find(entry=>entry.verses.includes(n));}
+function contentWords(text) {
+  const common = /^(?:about|after|again|among|before|being|chapter|could|first|people|shall|their|there|these|those|through|verse|which|would|ainda|antes|assim|aquele|aquela|capítulo|coisas|como|contra|depois|disse|entre|então|mesmo|muito|porque|sobre|todos|todas|versículo)$/iu;
+  return (text.match(/[\p{L}]{5,}/gu)||[]).filter(w=>!common.test(w));
+}
+function highlightedText(text,word) {
+  if(!word)return esc(text);
+  const start=text.toLocaleLowerCase().indexOf(word.toLocaleLowerCase());
+  return start<0?esc(text):esc(text.slice(0,start))+'<mark>'+esc(text.slice(start,start+word.length))+'</mark>'+esc(text.slice(start+word.length));
+}
+function readingPrompt(id) {
+  if ([18,19,20,21,22,25].includes(id)) return studyLanguage(['Leia duas linhas seguidas. Qual imagem ou contraste a segunda acrescenta à primeira?','Read two lines together. What image or contrast does the second add to the first?']);
+  if (id>=45 && id<=65) return studyLanguage(['Localize a afirmação principal. Como a frase anterior prepara o argumento?','Find the main claim. How does the preceding sentence prepare the argument?']);
+  if ((id>=23 && id<=39)||id===66) return studyLanguage(['Quem fala e a quem? Procure no trecho uma imagem que dê força à sua mensagem.','Who is speaking, and to whom? Find an image in the passage that gives the message force.']);
+  return studyLanguage(['Quem age ou fala neste trecho? Releia o versículo seguinte e observe o que muda.','Who acts or speaks here? Read the following verse and notice what changes.']);
+}
 function interactiveVerse(number, text, data) {
-  const content = `<sup>${number}</sup> ${esc(text)}`;
+  text=String(text || '');
+  const note=data && fieldNote(data,number);
+  const part=data?.study?.outline?.find(p=>number===p.from);
+  const words=new Set(contentWords(part?.title || '').map(w=>w.toLowerCase()));
+  const anchor=note && text.match(note.terms)?.[0] || contentWords(text).find(w=>words.has(w.toLowerCase()));
+  const content = `<sup>${number}</sup> <span class="verse-text">${highlightedText(text,anchor)}</span>`;
   if (!data?.study) return `<p class="verse">${content}</p>`;
   return `<button type="button" class="verse verse-trigger" data-study-verse="${number}" aria-expanded="false">${content}<span aria-hidden="true" class="verse-plus">＋</span></button>`;
 }
 
-function verseInsight(data, number) {
+function verseInsight(data, number, verses, inPortal) {
+  const place=inPortal && data.places?.find(p=>p.verses?.includes(number));
   const part = data.study.outline.find(p => p.from <= number && p.to >= number);
   const notes = data.study.scholarViews.filter(n => n.verse === number);
   const links = data.crossRefs.filter(r => r.fromVerse === number);
+  const note=fieldNote(data,number);
+  if(note?.link) {
+    const [bookId,chapter,verse]=note.link;
+    const i=links.findIndex(r=>r.bookId===bookId && r.chapter===chapter && r.verse===verse);
+    if(i>=0)links.splice(i,1);
+    links.unshift({bookId,chapter,verse,end:note.end,reason:studyLanguage(note.reason)});
+  }
   const sources = data.sources || [];
   return `<div class="verse-insight"><small>Estudo com IA</small>
+    ${note?`<h4>${esc(studyLanguage(note.question))}</h4><p>${esc(studyLanguage(note.answer))}</p>`:''}
+    ${note?.original ? `<details><summary>${esc(studyLanguage(['Palavra original','Original word']))}</summary><p><bdi lang="${note.original[2]==='he'?'he':'grc'}">${esc(note.original[0])}</bdi> · ${esc(note.original[1])} · ${esc(studyLanguage(note.original[3]))}</p></details>` : ''}
     ${part ? `<h4>${esc(part.title)}</h4><small>Contexto do trecho · v. ${part.from}–${part.to}</small><p>${esc(part.explanation)}</p>` : ''}
     ${notes.map(n => { const source = sources.find(s => s.id === n.sourceId);
       return `<div class="verse-comment"><strong>${source ? `<a href="${esc(source.url)}" target="_blank" rel="noopener">${esc(source.author)} ↗</a>` : esc(n.sourceId)}</strong><p>${esc(n.insight)}</p></div>`;
     }).join('')}
-    ${links.map(r => `<details data-parallel-book="${r.bookId}" data-chapter="${r.chapter}" data-number="${r.verse}"><summary>${esc(ref(r))}:${r.verse}</summary><p aria-live="polite"></p></details>`).join('')}
+    ${links.map(r => `<details data-parallel-book="${r.bookId}" data-chapter="${r.chapter}" data-number="${r.verse}" data-end="${r.end || r.verse}"><summary>${esc(ref(r))}:${r.verse}${r.end ? '–'+r.end : ''}</summary><p aria-live="polite"></p><small data-link-reason>${esc(r.reason || '')}</small></details>`).join('')}
+    <details><summary>${esc(studyLanguage(['Investigar o texto','Investigate the text']))}</summary><p class="discovery-prompt">${esc(readingPrompt(data.bookId))}</p>${[number-1,number,number+1].filter(n=>verses?.[n]).map(n=>`<p class="investigation-line"><sup>${n}</sup> ${esc(verses[n])}</p>`).join('')}${data.study.questions?.[0]?`<p>${esc(data.study.questions[0])}</p>`:''}</details>
+    ${place?`<button data-p="verse-place" data-place="${esc(place.name)}" data-return-verse="${number}">${esc(studyLanguage(['Localizar no mapa','Locate on map']))} · ${esc(atlasLabel(place))}</button>`:''}
+    ${data.study.uncertainty?`<details><summary>${esc(studyLanguage(['O que permanece em aberto?','What remains uncertain?']))}</summary><p>${esc(data.study.uncertainty)}</p></details>`:''}
     ${data.study.context ? `<details><summary>Contexto do capítulo</summary><p>${esc(data.study.context)}</p></details>` : ''}
   </div>`;
 }
@@ -445,7 +494,10 @@ document.addEventListener('click', event => {
   if (previous) { previous.remove(); button.setAttribute('aria-expanded','false'); return; }
   const data = button.closest('passage-portal')?.data || libraryData;
   if (!data) return;
-  row.insertAdjacentHTML('beforeend',verseInsight(data,Number(button.dataset.studyVerse)));
+  const portal=button.closest('passage-portal');
+  const lines=portal ? portal.translation?.verses : chapterData?.verses;
+  const verses=lines ? Object.fromEntries(lines.map((text,i)=>[i+1,text])) : portal?.text;
+  row.insertAdjacentHTML('beforeend',verseInsight(data,Number(button.dataset.studyVerse),verses,!!portal));
   button.setAttribute('aria-expanded','true');
 });
 
@@ -455,8 +507,20 @@ document.addEventListener('toggle', async event => {
   const line = details.querySelector('p');
   line.textContent = 'Carregando texto…';
   const bookText = await portalBookText(Number(details.dataset.parallelBook));
-  const verse = bookText?.[details.dataset.chapter]?.[details.dataset.number];
+  const chapter = bookText?.[details.dataset.chapter] || {};
+  const start=Number(details.dataset.number),end=Number(details.dataset.end)||start;
+  const verse=Array.from({length:end-start+1},(_,i)=>chapter[start+i]).filter(Boolean).join(' ');
   line.textContent = verse ? verse + ' · ' + (ENGLISH ? 'World English Bible' : 'Bíblia Portuguesa Mundial') : 'Texto indisponível nesta edição.';
+  if(!verse)return;
+  const reason=details.querySelector('[data-link-reason]');
+  const original=details.closest('.verse-row')?.querySelector('.verse-text')?.textContent || '';
+  const words=new Set(contentWords(original).map(w=>w.toLowerCase()));
+  const shared=contentWords(verse).find(w=>words.has(w.toLowerCase()));
+  if(shared)line.innerHTML=highlightedText(verse,shared)+' · '+(ENGLISH?'World English Bible':'Bíblia Portuguesa Mundial');
+  if(!reason.textContent)reason.textContent=shared
+    ? studyLanguage(['Observe como os dois versículos usam a palavra','Notice how both verses use the word'])+' “'+shared+'”.'
+    : studyLanguage(['Compare quem fala, a quem e em que circunstâncias nos dois textos.','Compare who speaks, to whom, and under what circumstances in the two texts.']);
+
 },true);
 
 function planView() {
@@ -504,7 +568,7 @@ function studyHtml(study, sources) {
   </div>`;
 }
 
-function footer() { return `<footer class="site-footer"><span>✦ Poiema Bereanos · leitura com intenção</span><span>Traduções abertas com créditos junto ao texto · <a href="./fontes.html">Fontes e licenças</a></span></footer>`; }
+function footer() { return `<footer class="site-footer"><span><img class="poiema-footer-logo" src="./media/poiema-logo.jpeg" alt="" width="22" height="22"> Poiema Bereanos · leitura com intenção</span><span>Traduções abertas com créditos junto ao texto · <a href="./fontes.html">Fontes e licenças</a></span></footer>`; }
 function render() {
   document.body.classList.toggle('comparison-open', Boolean(connection));
   $('#app').innerHTML = header() + (message ? `<div class="notice" role="alert">${esc(message)} <button data-action="dismiss" aria-label="Fechar aviso">×</button></div>` : '') + (view === 'plan' ? planView() : home()) + footer() + connectionOverlay();

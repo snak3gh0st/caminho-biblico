@@ -12,7 +12,7 @@
   }
   for(const name of ['app','portal']){
     const script=document.createElement('script');
-    script.async=false;script.src=(lang==='en'?'./en/':'./')+name+'.js?v=library-2';
+    script.async=false;script.src=(lang==='en'?'./en/':'./')+name+'.js?v=library-3';
     document.head.append(script);
   }
 })();

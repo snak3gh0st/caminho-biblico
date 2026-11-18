@@ -50,6 +50,23 @@ const modernPlaces = {
 const wellStops = ['Jerusalem','Sychar','Cana','Capernaum'];
 function atlasLabel(place) { return modernPlaces[place.name]?.[0] || place.name; }
 
+let modernRenderer;
+function loadModernMap() {
+  const script = file => new Promise((resolve,reject) => {
+    const node = document.createElement('script');
+    node.src = './vendor/english-map/' + file;
+    node.onload = resolve; node.onerror = reject; document.head.append(node);
+  });
+  modernRenderer ??= (async () => {
+    const probe=document.createElement('canvas').getContext('webgl2');
+    if(!probe)throw new Error('WebGL unavailable');
+    probe.getExtension('WEBGL_lose_context')?.loseContext();
+    if (!window.maplibregl) await script('maplibre-gl.js');
+    if (!L.maplibreGL) await script('leaflet-maplibre-gl.js');
+  })().catch(error => { modernRenderer = null; throw error; });
+  return modernRenderer;
+}
+
 const portalTexts = new Map();
 function portalBookText(id) {
   if (!portalTexts.has(id)) portalTexts.set(id, staticFile((ENGLISH?'en/bible/web/':'media/portal-text/') + id + '.json').catch(() => { portalTexts.delete(id); return {}; }));
@@ -186,11 +203,17 @@ class PassagePortal extends HTMLElement {
     if(map){
       this.base?.remove(); this.route?.remove(); this.overlay?.remove();
       const historic=era==='antigo';
-      this.base=L.tileLayer(historic?'https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}':'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-        historic?{maxNativeZoom:10,maxZoom:17,attribution:"Relevo: Esri and collaborators"}:{maxZoom:17,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(map);
+      this.modernVector?.remove(); this.modernVector=null;
+      this.base=L.tileLayer(historic?'https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}':'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        {maxNativeZoom:historic?10:17,maxZoom:17,attribution:'Esri, Earthstar Geographics and contributors'}).addTo(map);
+      const currentBase=this.base;
+      if(!historic) loadModernMap().then(()=>{
+        if(this.atlasMap!==map || this.base!==currentBase)return;
+        this.modernVector=L.maplibreGL({style:new URL('./vendor/english-map/liberty-en.json',document.baseURI).href,attributionControl:{customAttribution:'<a href="https://openfreemap.org/">OpenFreeMap</a> · <a href="https://openmaptiles.org/">OpenMapTiles</a> · © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}}).addTo(map);
+      }).catch(()=>{}); // Satellite imagery and English place markers remain usable without WebGL.
       for(const [name,marker] of this.markers){
-        const show=historic && (this.guide ? wellStops.includes(name) : this.markers.size<=6);
-        marker.unbindTooltip().bindTooltip(esc(modernPlaces[name]?.[0] || name),{permanent:show,direction:name==='Cana'?'left':'top'});
+        const show=historic && this.guide ? wellStops.includes(name) : this.markers.size<=6;
+        marker.unbindTooltip().bindTooltip(esc(historic ? modernPlaces[name]?.[0] || name : name),{permanent:show,direction:name==='Cana'?'left':'top'});
       }
       if(historic && this.guide) this.overlay=L.imageOverlay('./scenes/john4-relief.webp',[[31.56,34.68],[33.06,35.82]],{attribution:'Terrain Tiles'}).addTo(map);
       const stops=(narrativeJourneys[key(this.reading)] || []).map(n=>this.markers.get(n)?.getLatLng()).filter(Boolean);
@@ -211,13 +234,13 @@ class PassagePortal extends HTMLElement {
     }
     const modern=modernPlaces[name], today=this.atlasEra==='hoje';
     const well=this.guide && wellLocations[wellStops.indexOf(name)];
-    this.querySelector('.atlas-info').innerHTML=`<small>${today?"Current geography":"Geography of the narrative"} · v. ${esc(p.verses?.join(', '))}</small><h4>${esc(today && modern?modern[1]:atlasLabel(p))}</h4><p>${esc(today ? modern?.[2] || "The point brings the place mentioned. Use the names and routes of the current map to recognize the region." : well?.[3] || "Approximate location from the History Globe set.")}</p>${!today?"<small>I remember the current verse with biblical places. The paths link narrated stops and the old borders are not represented.</small>":''}<a target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat=${p.latitude}&amp;mlon=${p.longitude}#map=13/${p.latitude}/${p.longitude}">Open in OpenStreetMap ↗</a>`;
+    this.querySelector('.atlas-info').innerHTML=`<small>${today?"Current geography":"Geography of the narrative"} · v. ${esc(p.verses?.join(', '))}</small><h4>${esc(today && modern?modern[1]:atlasLabel(p))}</h4><p>${esc(today ? modern?.[2] || "The point brings the place mentioned. Use the names and routes of the current map to recognize the region." : well?.[3] || "Approximate location from the History Globe set.")}</p>${!today?"<small>I remember the current verse with biblical places. The paths link narrated stops and the old borders are not represented.</small>":''}<a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&amp;hl=en&amp;query=${p.latitude},${p.longitude}">Open in OpenStreetMap ↗</a>${this.profile?.dossier?.narratedEra ? `<details><summary>Time of the narrative</summary><p>${esc(this.profile.dossier.narratedEra)}</p></details>` : ''}${p.verses?.length ? `<button data-action="focus-verse" data-verse="${p.verses.includes(this.returnVerse)?this.returnVerse:p.verses[0]}">Read verse · ${p.verses.includes(this.returnVerse)?this.returnVerse:p.verses[0]}</button>` : ''}`;
   }
   disposeAtlas() {
     if(!this.atlasMap)return;
     this.atlasView={center:this.atlasMap.getCenter(),zoom:this.atlasMap.getZoom()};
     this.mapResize?.disconnect(); this.atlasMap.remove();
-    this.atlasMap=this.markers=this.base=this.overlay=this.route=null;
+    this.atlasMap=this.markers=this.base=this.overlay=this.route=this.modernVector=null;
   }
   async compare(i, chosen) {
     const target = this.querySelector('.portal-pair'), link = chosen || this.links[i];
@@ -252,7 +275,7 @@ class PassagePortal extends HTMLElement {
       if(action==='focus-verse' || action==='back-to-reading'){
         const verse=Number(local.dataset.verse)||this.part.from;
         this.index=Math.max(0,this.parts.findIndex(p=>p.from<=verse && p.to>=verse));
-        this.topic='cena'; this.paint(); const details=this.querySelector('.portal-note details'); if(details)details.open=true;return;
+        this.topic='cena'; this.paint(); const button=this.querySelector(`[data-study-verse="${verse}"]`); if(button){button.closest('details').open=true;button.focus();}return;
       }
       if(action==='focus-notes'){
         const dialog=this.closest('dialog'); if(dialog)dialog.close();
@@ -312,6 +335,7 @@ class PassagePortal extends HTMLElement {
       this.querySelector('.well-answer').innerHTML = `<p>${esc(this.guide.choices[Number(b.dataset.i)][1])}</p><small>${esc(this.guide.source)}</small>`;
       return;
     }
+    if(action==='verse-place'){this.atlasPlace=b.dataset.place;this.returnVerse=Number(b.dataset.returnVerse);this.querySelector('[data-p="mapa"]').click();return;}
     if(action==='scene-location'){this.atlasPlace=this.scenePlace;this.querySelector('[data-p="mapa"]').click();return;}
     if (action === 'era') { this.switchEra(b.dataset.era);return; }
     if (action === 'word') {
