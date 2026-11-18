@@ -273,3 +273,33 @@ body.portal-open {overflow:hidden}
 .well-atlas button:last-child span {top:auto;bottom:72%;right:-.9rem}
 .portal-note .portal-he {text-align:start;font-size:3.1rem;color:#f0d4a1;line-height:1.28;margin:.5rem 0}
 .portal-note [data-p="guide-audio"],.portal-note audio {margin-top:.8rem;max-width:100%}
+#biblioteca-capitulo {scroll-margin-top:85px}
+.portal-map {height:clamp(285px,41vh,470px);margin:.7rem 0;border-radius:10px;background:#c6be9e;isolation:isolate;color:#292e27}
+.portal-map a,.portal-map .leaflet-control-attribution a {color:#285a69}
+.portal-map .leaflet-control-attribution {max-width:100%}
+.atlas-switch {display:flex;gap:.4rem}
+.atlas-switch button[aria-pressed=true] {background:#f0ddba;color:#302c21}
+.atlas-picker {display:flex;align-items:center;gap:1rem;margin-top:.8rem;font-size:.84rem}
+.atlas-picker select {flex:1;min-width:0;min-height:42px;background:#fff6e6;color:#342c1e;border:0;border-radius:6px;padding:.4rem}
+.atlas-info a {display:inline-block;margin-top:.8rem}
+.portal-note.study-paper {margin-top:1rem;padding:clamp(1rem,2vw,2rem);border-radius:10px;background:#f6f3e8;color:#304936}
+.portal-note.study-paper :is(p,small,button,summary,a) {color:#355441}
+.portal-note.study-paper h3,.portal-note.study-paper h4 {color:#2f5039}
+.portal-note.study-paper :is(.deep-head,.library-practice) :is(p,small,button,h3,h4) {color:inherit}
+.portal-note.study-paper .library-columns,.portal-note.study-paper .deep-two {grid-template-columns:1fr}
+.portal-note.study-paper .scholar-grid {grid-template-columns:repeat(auto-fit,minmax(min(100%,225px),1fr))}
+.portal-note.study-paper .deep-study {margin:0}
+.portal-study .portal-note.study-paper .deep-tab.active {color:white;background:#355441}
+.portal-study .portal-note .atlas-switch button,.portal-study nav button {touch-action:manipulation}
+@media(min-width:850px){
+ .portal-dialog passage-portal.study-wide {grid-template-columns:minmax(310px,.82fr) minmax(0,1.18fr)}
+ .portal-dialog .study-wide .portal-study {align-self:start;height:100dvh}
+}
+@media(max-width:849px){
+ .portal-dialog .study-wide .portal-stage {min-height:240px}
+ .portal-dialog .study-wide .portal-pin {top:26%}
+}
+.portal-more {padding:.1rem .4rem;border-bottom:1px solid #d4c29f52}
+.portal-more>summary {cursor:pointer;color:#efdfbf;font-size:.85rem;padding:.6rem 0}
+.portal-more nav {border:0}
+.scene-autoplay {display:block;font-size:.8rem;margin:.5rem 0}
