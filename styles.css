@@ -402,3 +402,44 @@ body.portal-open {overflow:hidden}
  .portal-dialog .portal-caption {padding:15px}
  .portal-study>nav button {font-size:.82rem;padding-inline:.55rem}
 }
+.site-header nav {margin-left:auto}
+.language-choice {border:1px solid #ddd;background:#fff;color:#161616;border-radius:5px;font-size:13px;padding:.5rem .3rem;min-height:36px}
+#chapter-browser,.chapter-bar {display:flex;align-items:end;flex-wrap:wrap;gap:10px}
+#chapter-browser label,.chapter-bar label {display:grid;gap:5px;font-size:.8rem;font-weight:600}
+#chapter-browser select,.chapter-bar select {background:#fff;color:#151515;border:1px solid #ccc;border-radius:5px;min-height:42px;max-width:100%;padding:.4rem}
+#chapter-browser .button {flex-basis:100%;justify-content:center;margin-top:4px}
+#chapter-browser label:first-child {flex:1;min-width:0}
+.catalog-caption {position:absolute;bottom:0;left:0;right:0;display:grid;gap:4px;background:linear-gradient(transparent,#000c);color:#fff;padding:40px 24px 18px}
+.catalog-caption strong {font:1.65rem var(--serif)}
+.chapter-bar {position:sticky;top:0;z-index:4;background:#171717;color:white;padding:8px 16px;border-bottom:1px solid #555}
+.chapter-bar label {display:flex;align-items:center}
+.chapter-bar button {margin-left:auto;background:none;border:1px solid #888;border-radius:5px;color:#fff;padding:.5rem}
+.library-dialog .portal-rail [data-p=expand] {display:none}
+.library-dialog .portal-arriving {min-height:0}
+@media(min-width:850px){.library-dialog .portal-stage,.library-dialog .study-wide .portal-study{height:calc(100dvh - 60px)}.library-dialog passage-portal{min-height:calc(100dvh - 60px)}}
+@media(max-width:600px){
+ .chapter-bar {gap:6px;padding:6px}.chapter-bar label {display:grid;font-size:.68rem;gap:1px}.chapter-bar select {min-height:34px;max-width:42vw}
+ .header-inner {gap:6px}.site-header nav {gap:8px}
+ .current-study {display:none}.language-choice {font-size:12px;width:70px}
+ .bible-library.hero {flex-direction:column-reverse}.bible-library .hero-raster {aspect-ratio:2.8}
+}
+.book-index {margin-top:14px;border-bottom:1px solid #ddd;padding:0 4px 12px}
+.book-index>summary {cursor:pointer;font-weight:600;padding:10px 0}
+.book-index label {display:grid;gap:5px;max-width:30rem;margin:12px 0}
+.book-index input {border:1px solid #999;border-radius:4px;padding:10px}
+.book-index section h2 {font-size:1.35rem;margin:18px 0 8px}
+.book-index section div {display:flex;flex-wrap:wrap;gap:6px}
+.book-index button {background:white;border:1px solid #bbb;border-radius:5px;color:#171717;padding:7px 12px;min-height:38px}
+.book-index button:hover {background:#111;color:#fff}
+.chapter-bar [data-step] {margin-left:0;min-width:35px}
+.scene-evidence button {margin-top:8px}
+@media(max-width:500px){.chapter-bar{gap:4px}.chapter-bar label:first-child{min-width:0;flex:1}.chapter-bar label:first-child select{width:100%}.chapter-bar [data-step]{padding:.4rem;min-width:29px}.chapter-bar [data-close]{padding:.4rem;font-size:.78rem}}
+@media(max-width:375px){
+ .header-inner {padding-inline:8px;gap:5px}
+ .brand {font-size:18px;gap:3px}.brand-mark {font-size:16px}
+ .language-choice {width:65px;min-width:0}
+ .site-header nav {gap:6px}
+}
+#reference-search {display:flex;align-items:end;gap:.8rem;flex-wrap:wrap;margin:.8rem 0}
+#reference-search label {flex:1;margin:0;min-width:min(240px,100%)}
+.book-index .ref-jump {color:white;background:#171717;min-height:41px}

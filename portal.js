@@ -52,7 +52,7 @@ function atlasLabel(place) { return modernPlaces[place.name]?.[0] || place.name;
 
 const portalTexts = new Map();
 function portalBookText(id) {
-  if (!portalTexts.has(id)) portalTexts.set(id, staticFile('media/portal-text/' + id + '.json').catch(() => { portalTexts.delete(id); return {}; }));
+  if (!portalTexts.has(id)) portalTexts.set(id, staticFile((ENGLISH?'en/bible/web/':'media/portal-text/') + id + '.json').catch(() => { portalTexts.delete(id); return {}; }));
   return portalTexts.get(id);
 }
 class PassagePortal extends HTMLElement {
@@ -60,7 +60,7 @@ class PassagePortal extends HTMLElement {
     this.reading ??= plan()?.days[activeDay]?.readings[activeReading];
     this.data ??= libraryData;
     this.profile ??= bookProfileData;
-    this.translation ??= chapterData;
+    this.translation ??= this.closest('.library-dialog') ? null : chapterData;
     if (!this.data || !this.reading) return;
     this.atlasEra ??= 'antigo';
     this.index = Number(this.dataset.start || 0);
@@ -119,7 +119,7 @@ class PassagePortal extends HTMLElement {
     if(full){
       el.innerHTML = this.topic==='editorial' ? studyRoom(this.reading,this.editorialTab || 'panorama',this.movement || 0) : chapterStudyPanel(this.reading,this.data,this.profile,this.topic);
       if(this.topic==='estudiosos') el.insertAdjacentHTML('beforeend','<a href="./fontes.html" target="_blank" rel="noopener">Fontes e licenças do estudo ↗</a>');
-      if (!plan()) el.querySelectorAll('[data-action="focus-notes"]').forEach(b=>b.remove());
+      if (!plan() || this.closest('.library-dialog')) el.querySelectorAll('[data-action="focus-notes"]').forEach(b=>b.remove());
       return;
     }
     const p = this.part, s = this.data.study;
@@ -148,8 +148,12 @@ class PassagePortal extends HTMLElement {
         return `<details><summary>${title}</summary><small>Contexto do livro · ${esc(entry.reference)}</small><p>${esc(entry.detail)}</p>${refs.map(src=>`<a href="${esc(src.url)}" target="_blank" rel="noopener">${esc(src.title)}</a>`).join(' · ')}</details>`;
       }).join('')}<details><summary>Fontes do estudo</summary>${this.data.sources.map(src=>`<p><a href="${esc(src.url)}" target="_blank" rel="noopener">${esc(src.author)}</a></p>`).join('')}</details>`;return;
     }
+    const annotation=this.data.study.scholarViews.find(v=>v.verse>=p.from && v.verse<=p.to);
+    const place=this.data.places?.find(loc=>loc.verses?.some(v=>v>=p.from && v<=p.to));
+    const evidence=this.guide?'':`<div class="scene-evidence">${annotation?`<details><summary>${esc(this.data.sources.find(src=>src.id===annotation.sourceId)?.author || annotation.sourceId)} · v. ${annotation.verse}</summary><p>${esc(annotation.insight)}</p></details>`:''}${place?`<button data-p="scene-location">Localizar ${esc(atlasLabel(place))} ↗</button>`:''}</div>`;
+    this.scenePlace=place?.name;
     const lines = Array.from({length:p.to-p.from+1},(_,i)=>this.translation?.verses?.[p.from+i-1] || this.text?.[p.from+i]);
-    el.innerHTML = `<small>${esc(this.detail?.[2] || ref(this.reading)+' · v. '+p.from+'–'+p.to)}</small>${this.guide ? `<h4>${esc(this.guide.question)}</h4><div class="well-choices">${this.guide.choices.map(([label],i)=>`<button data-p="discover" data-i="${i}">${esc(label)} →</button>`).join('')}</div><div class="well-answer" aria-live="polite"></div><button data-p="guide-audio">▷ Ouvir guia em português</button><label class="scene-autoplay"><input type="checkbox" data-continue ${this.continueAudio?'checked':''}> Continuar nas próximas cenas</label>` : `<h4>Dentro do trecho</h4><p>${esc(p.explanation)}</p>`}${lines.some(Boolean)?`<details><summary>Ler o texto · ${esc(this.translation?.versionName || 'Bíblia Portuguesa Mundial')}</summary>${lines.map((v,i)=>`<p><sup>${p.from+i}</sup> ${esc(v)}</p>`).join('')}</details>`:''}`;
+    el.innerHTML = `<small>${esc(this.detail?.[2] || ref(this.reading)+' · v. '+p.from+'–'+p.to)}</small>${this.guide ? `<h4>${esc(this.guide.question)}</h4><div class="well-choices">${this.guide.choices.map(([label],i)=>`<button data-p="discover" data-i="${i}">${esc(label)} →</button>`).join('')}</div><div class="well-answer" aria-live="polite"></div><button data-p="guide-audio">▷ Ouvir guia em português</button><label class="scene-autoplay"><input type="checkbox" data-continue ${this.continueAudio?'checked':''}> Continuar nas próximas cenas</label>` : `<h4>Dentro do trecho</h4><p>${esc(p.explanation)}</p>`}${evidence}${lines.some(Boolean)?`<details><summary>Ler o texto · ${esc(this.translation?.versionName || 'Bíblia Portuguesa Mundial')}</summary>${lines.map((v,i)=>`<p><sup>${p.from+i}</sup> ${esc(v)}</p>`).join('')}</details>`:''}`;
   }
   atlas(el) {
     const places = this.data.places || [];
@@ -308,6 +312,7 @@ class PassagePortal extends HTMLElement {
       this.querySelector('.well-answer').innerHTML = `<p>${esc(this.guide.choices[Number(b.dataset.i)][1])}</p><small>${esc(this.guide.source)}</small>`;
       return;
     }
+    if(action==='scene-location'){this.atlasPlace=this.scenePlace;this.querySelector('[data-p="mapa"]').click();return;}
     if (action === 'era') { this.switchEra(b.dataset.era);return; }
     if (action === 'word') {
       this.audio = new Audio('./media/hebrew/'+this.guide.word[4]+'.mp3');
@@ -321,27 +326,54 @@ class PassagePortal extends HTMLElement {
 }
 customElements.define('passage-portal', PassagePortal);
 
-async function enterWellPortal(trigger) {
-  const dialog = document.createElement('dialog');
-  dialog.className = 'portal-dialog portal-arrival';
-  dialog.setAttribute('aria-label','João 4 · O poço de Jacó');
-  dialog.innerHTML = '<div class="portal-arriving"><p role="status">Entrando em Samaria…</p><button>Voltar à leitura</button></div>';
-  dialog.querySelector('button').onclick = () => dialog.close();
-  dialog.addEventListener('close', () => {
-    dialog.remove(); document.body.classList.remove('portal-open');
-    trigger.focus({preventScroll:true});
-  }, {once:true});
-  document.body.append(dialog); document.body.classList.add('portal-open');
-  dialog.showModal();
-  try {
-    const [study, profile] = await Promise.all([getJson('/api/library/43/4'),getJson('/api/book-profile/43').catch(()=>null)]);
-    if (!dialog.open) return;
-    const scene = document.createElement('passage-portal');
-    scene.reading = {bookId:43,chapter:4}; scene.data=study; scene.profile=profile;
-    scene.setAttribute('expanded',''); dialog.replaceChildren(scene);
-    scene.querySelector('[data-p="expand"]').focus({preventScroll:true});
-  } catch {
-    const notice = dialog.querySelector('[role="status"]');
-    if (notice) notice.textContent = 'A cena não carregou. Volte à leitura e tente novamente.';
+async function enterLibraryPortal(trigger, initialReading, restore=null) {
+  const dialog=document.createElement('dialog');
+  dialog.className='portal-dialog library-dialog';
+  const toolbar=document.createElement('form');
+  toolbar.className='chapter-bar';
+  toolbar.innerHTML=`<label>Livro<select name="bookId">${books.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('')}</select></label><label>Capítulo<select name="chapter"></select></label><button type="button" data-step="-1" aria-label="Capítulo anterior">←</button><button type="button" data-step="1" aria-label="Próximo capítulo">→</button><select class="portal-language" name="language" aria-label="Idioma"><option value="pt" ${ENGLISH?'':'selected'}>PT</option><option value="en" ${ENGLISH?'selected':''}>EN</option></select><button type="button" data-close>Fechar ×</button>`;
+  const body=document.createElement('div');body.className='library-portal-body';
+  dialog.append(toolbar,body);
+  let revision=0;
+  async function load(reading){
+    const request=++revision;
+    rememberReading(reading);
+    const picker=document.querySelector('#chapter-browser');
+    if(picker){picker.elements.bookId.value=reading.bookId;picker.elements.chapter.innerHTML=chapterOptions(reading);refreshBrowseCover();}
+    toolbar.elements.bookId.value=reading.bookId;toolbar.elements.chapter.innerHTML=chapterOptions(reading);
+    toolbar.querySelector('[data-step="-1"]').disabled=reading.bookId===1 && reading.chapter===1;
+    toolbar.querySelector('[data-step="1"]').disabled=reading.bookId===66 && reading.chapter===book(66).chapters;
+    dialog.setAttribute('aria-label',ref(reading));
+    body.innerHTML='<p class="loading" role="status">Carregando o capítulo…</p>';
+    try{
+      const [data,profile]=await Promise.all([getJson('/api/library/'+key(reading).replace(':','/')),getJson('/api/book-profile/'+reading.bookId).catch(()=>null)]);
+      if(!dialog.open || request!==revision)return;
+      const scene=document.createElement('passage-portal');scene.reading=reading;scene.data=data;scene.profile=profile;
+      if(restore){scene.dataset.start=String(restore.index || 0);scene.dataset.topic=restore.topic || 'cena';scene.atlasEra=restore.era;scene.atlasPlace=restore.place;restore=null;}
+      scene.setAttribute('expanded','');body.replaceChildren(scene);
+    }catch{
+      if(!dialog.open || request!==revision)return;
+      body.innerHTML='<p class="loading" role="alert">Não foi possível carregar este capítulo. <button>Tentar novamente</button></p>';
+      body.querySelector('button').onclick=()=>load(reading);
+    }
   }
+  toolbar.querySelectorAll('[data-step]').forEach(button=>button.onclick=()=>{
+    let id=Number(toolbar.elements.bookId.value), chapter=Number(toolbar.elements.chapter.value)+Number(button.dataset.step);
+    if(chapter<1 && id>1){id--;chapter=book(id).chapters;}
+    if(chapter>book(id).chapters && id<66){id++;chapter=1;}
+    load({bookId:id,chapter});
+  });
+  toolbar.onchange=e=>{
+    const bookId=Number(toolbar.elements.bookId.value),chapter=Number(toolbar.elements.chapter.value);
+    if(e.target.name==='language'){
+      const scene=body.querySelector('passage-portal');
+      switchLanguage(e.target.value,{bookId,chapter,index:scene?.index,topic:scene?.topic,era:scene?.atlasEra,place:scene?.atlasPlace});return;
+    }
+    load({bookId,chapter:e.target.name==='bookId'?1:chapter});
+  };
+  toolbar.onsubmit=e=>e.preventDefault();
+  toolbar.querySelector('[data-close]').onclick=()=>dialog.close();
+  dialog.addEventListener('close',()=>{revision++;dialog.remove();document.body.classList.remove('portal-open');trigger.focus({preventScroll:true});},{once:true});
+  document.body.append(dialog);document.body.classList.add('portal-open');dialog.showModal();
+  await load(initialReading);
 }

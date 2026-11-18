@@ -1,4 +1,5 @@
 const STORAGE = 'caminho-biblico-v1';
+const ENGLISH = document.documentElement?.lang === 'en';
 const STATIC_MODE = document.querySelector('meta[name="static-mode"]')?.content === 'true';
 const starterPlans = [
   { key: 'aprofundar', tag: '10 DIAS · ESTUDOS PRONTOS', title: 'Grandes temas da Bíblia', description: 'Dez capítulos com análise, contexto, conexões e perguntas já preparados.', accent: 'sage', refs: [[1,1],[19,23],[41,1],[43,1],[43,3],[43,4],[43,10],[43,11],[43,14],[43,20]], focuses: ['Criação e dignidade','Cuidado no vale','O reino se aproxima','A Palavra entre nós','Vida do alto','Água viva','O bom pastor','Vida diante da morte','Paz e Espírito','Ressurreição e missão'] },
@@ -25,8 +26,8 @@ let activeDay = 0;
 let activeReading = 0;
 let chapterData = null;
 let comparisonData = null;
-let selectedVersion = 'almeida-livre';
-let compareVersion = 'nva';
+let selectedVersion = ENGLISH ? 'web' : 'almeida-livre';
+let compareVersion = ENGLISH ? 'kjv' : 'nva';
 let compareEnabled = false;
 let studyTab = 'panorama';
 let selectedMovement = 0;
@@ -54,6 +55,21 @@ function nextDay(item) { const index = item.days.findIndex(day => day.readings.s
 function notify(text) { message = text; render(); }
 
 async function getJson(url, options) {
+  if(ENGLISH) {
+    if(url==='/api/books')return {books:await staticFile('en/books.json')};
+    if(url==='/api/studies')return {studies:await staticFile('en/studies.json')};
+    if(url==='/api/versions')return {versions:{web:'World English Bible',kjv:'King James Version'}};
+    const study=url.match(/^\/api\/library\/(\d+)\/(\d+)$/);
+    if(study)return staticFile(`en/library/${study[1]}/${study[2]}.json`);
+    const profile=url.match(/^\/api\/book-profile\/(\d+)$/);
+    if(profile)return staticFile(`en/library/${profile[1]}/book.json`);
+    const chapter=url.match(/^\/api\/chapter\/(\d+)\/(\d+)(?:\?version=(web|kjv))?$/);
+    if(chapter){
+      const [,id,n,edition='web']=chapter;
+      const text=(await staticFile(`en/bible/${edition}/${id}.json`))[n];
+      return {bookId:Number(id),bookName:book(id).name,chapter:Number(n),verses:Array.from({length:Math.max(...Object.keys(text).map(Number))},(_,i)=>text[i+1] || ''),version:edition,versionName:versions[edition],copyright:'Public domain',sourceUrl:`https://bible.helloao.org/api/eng_${edition}/${book(id).commentaryId}/${n}.json`};
+    }
+  }
   if (STATIC_MODE) {
     if (options?.method === 'POST') throw new Error('A IA ainda não está disponível nesta publicação.');
     if (url === '/api/status') return { aiReady: false, hosted: true };
@@ -97,6 +113,23 @@ function newPlan(title, description, days, origin) {
   state.plans.unshift(item);
   save();
   openPlan(item.id, 0);
+}
+function planCopy(item, day=0) {
+  const first=item.days[0]?.readings[0];
+  if(!first)return item;
+  if(item.origin==='curated'){
+    const template=starterPlans.find(t=>t.refs.length===item.days.length && t.refs.every(([id,n],i)=>item.days[i].readings[0]?.bookId===id && item.days[i].readings[0]?.chapter===n));
+    if(template)return {...template,focus:template.focuses[day] || ref(item.days[day].readings[0])};
+  }
+  if(item.origin==='book'){
+    const name=book(first.bookId)?.name;
+    return {title:`Lendo ${name}`,description:`Uma jornada por todos os ${book(first.bookId)?.chapters} capítulos de ${name}, no seu ritmo.`,focus:item.days[day].readings.map(ref).join(' · ')};
+  }
+  return {...item,focus:item.days[day].focus};
+}
+function switchLanguage(lang, portal=null){
+  try {sessionStorage.setItem('poiema-return',JSON.stringify({planId:view==='plan'?activePlanId:null,day:activeDay,reading:activeReading,portal}));}catch{}
+  const url=new URL(location.href);url.searchParams.set('lang',lang);location.assign(url);
 }
 function openPlan(id, dayIndex) {
   activePlanId = id;
@@ -152,21 +185,53 @@ async function loadChapter() {
 function header() {
   return `<header class="site-header"><div class="header-inner">
     <button class="brand" data-action="home" aria-label="Poiema Bereanos · início"><span class="brand-mark" aria-hidden="true">✦</span><span>Poiema Bereanos</span></button>
-    <nav aria-label="Navegação principal"><button class="nav-link ${view === 'home' ? 'selected' : ''}" data-action="home">Início</button><button class="nav-link" data-action="browse-plans">Planos</button>${view==='plan'?'<span class="nav-link selected current-study" aria-current="page">Leitura</span>':''}</nav>
+    <nav aria-label="Navegação principal"><button class="nav-link ${view === 'home' ? 'selected' : ''}" data-action="home">Bíblia</button><button class="nav-link" data-action="browse-plans">Planos</button>${view==='plan'?'<span class="nav-link selected current-study" aria-current="page">Leitura</span>':''}</nav>
+    <select class="language-choice" aria-label="Idioma" id="language-choice"><option value="pt" ${ENGLISH?'':'selected'}>Português</option><option value="en" ${ENGLISH?'selected':''}>English</option></select>
   </div></header>`;
+}
+
+let browseReading = {bookId:1,chapter:1};
+try {
+  const stored=JSON.parse(localStorage.getItem('poiema-library'));
+  if(stored && Number.isInteger(stored.bookId) && Number.isInteger(stored.chapter))browseReading=stored;
+} catch {}
+function foldBookName(text){return text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase().replace(/\s+/g,' ');}
+function findChapter(query){
+  const parts=foldBookName(query).match(/^(.+?)\s+(\d+)$/);if(!parts)return null;
+  const selected=books.find(b=>foldBookName(b.name)===parts[1]);
+  const chapter=Number(parts[2]);
+  return selected && chapter>=1 && chapter<=selected.chapters ? {bookId:selected.id,chapter}:null;
+}
+function chapterOptions(reading) {
+  return Array.from({length:book(reading.bookId)?.chapters || 1},(_,i)=>`<option value="${i+1}" ${i+1===reading.chapter?'selected':''}>${i+1}</option>`).join('');
+}
+function browseCover(){
+  const first=Object.entries(passageImages).find(([id])=>id.startsWith(key(browseReading)+':1-'));
+  return first?.[1] || passageScene(browseReading,{from:1,to:1,title:'',explanation:''});
+}
+function rememberReading(reading){
+  browseReading={bookId:reading.bookId,chapter:reading.chapter};
+  try {localStorage.setItem('poiema-library',JSON.stringify(browseReading));}catch{}
+}
+function refreshBrowseCover() {
+  const img=document.querySelector('#browse-cover');
+  if(!img)return;
+  const scene=browseCover();img.src='./scenes/'+scene.file;img.alt=scene.alt;
+  document.querySelector('.catalog-caption strong').textContent=ref(browseReading);
 }
 
 function home() {
   const current = state.plans[0];
   const covers = {aprofundar:'passage-1-1-1-5.webp',jesus:'passage-43-1-1-5.webp',marcos:'passage-41-1-1-8.webp',salmos:'passage-19-23-1-2.webp'};
   return `<main class="home-wrap">
-    <section class="hero"><div class="hero-copy"><span class="hero-reference">João 4 &nbsp;·&nbsp; Samaria</span>
-      <h1>Junto ao poço<br><em>de Jacó</em></h1>
-      <p>Um viajante pede água a uma mulher samaritana. Descubra por que esse gesto surpreende, acompanhando a conversa no lugar onde acontece.</p>
-      <div class="hero-actions"><button class="button button-dark" data-action="enter-well">Entrar na cena <span aria-hidden="true">↗</span></button><a href="#planos" class="text-link">Ver planos de leitura</a></div>
-    </div><div class="hero-art hero-raster"><img src="./scenes/passage-43-4-1-6.webp" alt="Ilustração de João 4 junto ao poço em Samaria" width="1280" height="720" fetchpriority="high"><small class="hero-credit">Cena interpretativa · IA</small></div></section>
-    ${current ? `<section class="continue-card"><div><span class="resume-label">Seu plano atual</span><h2>${esc(current.title)}</h2><p>${completed(current)} de ${totalReadings(current)} capítulos lidos</p><div class="progress-track"><span style="width:${percentage(current)}%"></span></div></div><button class="button button-light" data-action="open-plan" data-id="${esc(current.id)}">Continuar leitura <span aria-hidden="true">→</span></button></section>` : ''}
-    ${state.plans.length > 1 ? `<section class="section my-plans"><div class="section-heading"><div><h2>Outros planos salvos</h2></div></div><div class="plan-list">${state.plans.slice(1).map(item => `<button class="plan-row" data-action="open-plan" data-id="${esc(item.id)}"><span class="plan-row-icon">✦</span><span class="plan-row-main"><strong>${esc(item.title)}</strong><small>${item.days.length} dias · ${completed(item)} de ${totalReadings(item)} capítulos</small></span><span class="plan-row-progress">${percentage(item)}%</span><span aria-hidden="true">→</span></button>`).join('')}</div></section>` : ''}
+    <section class="hero bible-library" id="biblia"><div class="hero-copy">
+      <h1>Explore a Bíblia</h1>
+      <p>Escolha uma passagem para investigar suas cenas, lugares e conexões.</p>
+      <form id="chapter-browser"><label>Livro<select name="bookId">${['old','new'].map(t=>`<optgroup label="${t==='old'?'Antigo Testamento':'Novo Testamento'}">${books.filter(b=>b.testament===t).map(b=>`<option value="${b.id}" ${b.id===browseReading.bookId?'selected':''}>${esc(b.name)}</option>`).join('')}</optgroup>`).join('')}</select></label><label>Capítulo<select name="chapter">${chapterOptions(browseReading)}</select></label><button class="button button-dark" type="submit">Entrar no capítulo <span aria-hidden="true">↗</span></button></form>
+    </div><div class="hero-art hero-raster"><img id="browse-cover" src="./scenes/${esc(browseCover().file)}" alt="${esc(browseCover().alt)}" width="1280" height="720" fetchpriority="high"><span class="catalog-caption"><small>Cena interpretativa · IA</small><strong>${esc(ref(browseReading))}</strong></span></div></section>
+    <details class="book-index"><summary>Índice dos 66 livros</summary><form id="reference-search"><label>Buscar livro ou capítulo<input type="search" id="book-search" autocomplete="off" placeholder="Ex.: Romanos 8"></label><button class="ref-jump" hidden></button></form>${['old','new'].map(t=>`<section data-testament><h2>${t==='old'?'Antigo Testamento':'Novo Testamento'}</h2><div>${books.filter(b=>b.testament===t).map(b=>`<button data-action="choose-book" data-id="${b.id}">${esc(b.name)}</button>`).join('')}</div></section>`).join('')}<p class="book-empty" hidden>Nenhum livro encontrado.</p></details>
+    ${current ? `<section class="continue-card"><div><span class="resume-label">Seu plano atual</span><h2>${esc(planCopy(current).title)}</h2><p>${completed(current)} de ${totalReadings(current)} capítulos lidos</p><div class="progress-track"><span style="width:${percentage(current)}%"></span></div></div><button class="button button-light" data-action="open-plan" data-id="${esc(current.id)}">Continuar leitura <span aria-hidden="true">→</span></button></section>` : ''}
+    ${state.plans.length > 1 ? `<section class="section my-plans"><div class="section-heading"><div><h2>Outros planos salvos</h2></div></div><div class="plan-list">${state.plans.slice(1).map(item => `<button class="plan-row" data-action="open-plan" data-id="${esc(item.id)}"><span class="plan-row-icon">✦</span><span class="plan-row-main"><strong>${esc(planCopy(item).title)}</strong><small>${item.days.length} dias · ${completed(item)} de ${totalReadings(item)} capítulos</small></span><span class="plan-row-progress">${percentage(item)}%</span><span aria-hidden="true">→</span></button>`).join('')}</div></section>` : ''}
     <section class="section" id="planos"><div class="section-heading"><div><h2>Planos de leitura</h2></div><a class="text-link" href="#criar">Montar meu plano →</a></div>
       <div class="reading-plans">${starterPlans.map(item => `<button class="reading-plan" data-action="start-starter" data-key="${item.key}"><img src="./scenes/${covers[item.key]}" alt="" width="112" height="84" loading="lazy"><span><small>${item.refs.length} dias</small><strong>${esc(item.title)}</strong><span>${esc(item.description)}</span></span><b aria-hidden="true">↗</b></button>`).join('')}</div>
     </section>
@@ -265,6 +330,7 @@ function passageScene(reading, part) {
   else if (reading.bookId >= 40 && reading.bookId <= 43 && reading.chapter < 18) id = 'cana';
   else if (reading.bookId >= 2 && reading.bookId <= 5) id = 'exodus';
   else id = 'jerusalem';
+  id = part.sceneId && Object.hasOwn(visualScenes,part.sceneId) ? part.sceneId : id;
   const [file,title,alt] = visualScenes[id];
   return { id, file, title, alt, thematic: key(reading) !== '43:4' };
 }
@@ -318,7 +384,7 @@ function historicalDossier(reading, profile = bookProfileData) {
 }
 function narratedFilm(reading) {
   if (key(reading) !== '43:4') return '';
-  return `<section class="narrated-film"><h3>João 4, uma jornada narrada</h3><p>Ouça o movimento da passagem enquanto explora as cenas.</p><video controls playsinline preload="none" poster="./scenes/well.jpg" aria-label="Jornada narrada de João capítulo quatro"><source src="./media/43-4.mp4" type="video/mp4"><track kind="captions" src="./media/43-4.vtt" srclang="pt-BR" label="Português" default>Seu navegador não conseguiu reproduzir este vídeo.</video><p class="scene-disclosure">Voz sintética gerada por IA. Montagem de ilustrações geradas por IA com movimento de câmera. As cenas são interpretações artísticas.</p><a href="./media/43-4-transcript.txt" target="_blank" rel="noopener">Ler a transcrição completa ↗</a><p class="library-footnote">O roteiro acompanha a análise e as fontes identificadas neste capítulo. Volte ao texto para conferir cada observação.</p></section>`;
+  return `<section class="narrated-film"><h3>João 4, uma jornada narrada</h3><p>Ouça o movimento da passagem enquanto explora as cenas.</p><video controls playsinline preload="none" poster="./scenes/well.jpg" aria-label="Jornada narrada de João capítulo quatro"><source src="./media/43-4.mp4" type="video/mp4"><track kind="captions" src="${ENGLISH?'./en/43-4.vtt':'./media/43-4.vtt'}" srclang="${ENGLISH?'en':'pt-BR'}" label="${ENGLISH?'English':'Português'}" default>Seu navegador não conseguiu reproduzir este vídeo.</video><p class="scene-disclosure">Voz sintética gerada por IA. Montagem de ilustrações geradas por IA com movimento de câmera. As cenas são interpretações artísticas.</p><a href="${ENGLISH?'./en/43-4-transcript.txt':'./media/43-4-transcript.txt'}" target="_blank" rel="noopener">Ler a transcrição completa ↗</a><p class="library-footnote">O roteiro acompanha a análise e as fontes identificadas neste capítulo. Volte ao texto para conferir cada observação.</p></section>`;
 }
 
 function chapterStudyPanel(reading, data, profileData, section) {
@@ -355,14 +421,15 @@ function planView() {
   if (!item) return home();
   const day = item.days[activeDay];
   const reading = day.readings[activeReading];
+  const copy=planCopy(item,activeDay);
   const currentKey = key(reading);
   const study = item.studies[currentKey];
   const guide = prebuiltStudies[currentKey];
   const isDone = item.done.includes(currentKey);
   return `<main class="workspace-wrap"><button class="back-link" data-action="browse-plans"><span aria-hidden="true">←</span> Todos os planos</button>
-    <section class="workspace-head"><div><span class="eyebrow">SEU PLANO DE LEITURA · ${item.days.length} DIAS</span><h1>${esc(item.title)}</h1><p>${esc(item.description)}</p></div><div class="head-progress"><strong>${percentage(item)}<span>%</span></strong><span>do plano concluído</span><div class="progress-track"><span style="width:${percentage(item)}%"></span></div></div></section>
+    <section class="workspace-head"><div><span class="eyebrow">SEU PLANO DE LEITURA · ${item.days.length} DIAS</span><h1>${esc(copy.title)}</h1><p>${esc(copy.description)}</p></div><div class="head-progress"><strong>${percentage(item)}<span>%</span></strong><span>do plano concluído</span><div class="progress-track"><span style="width:${percentage(item)}%"></span></div></div></section>
     <div class="workspace-grid"><aside class="days-panel" aria-label="Dias do plano"><div class="panel-heading"><span>Dias do plano</span><strong>${completed(item)} / ${totalReadings(item)}</strong></div><label class="day-picker">Dia do plano<select id="day-picker">${item.days.map((entry,i)=>`<option value="${i}" ${i===activeDay?'selected':''}>Dia ${i+1} · ${esc(entry.readings.map(ref).join(' + '))}</option>`).join('')}</select></label><div class="day-list">${item.days.map((entry,index) => { const done = entry.readings.every(r => item.done.includes(key(r))); return `<button class="day-item ${index===activeDay?'active':''}" data-action="open-day" data-index="${index}"><span class="day-icon">${done?'✓':String(index+1).padStart(2,'0')}</span><span><strong>Dia ${index+1}</strong><small>${esc(entry.readings.map(ref).join(' + '))}</small></span><span class="day-chevron">›</span></button>`; }).join('')}</div></aside>
-    <section class="reader-panel" aria-label="Leitura bíblica"><div class="reader-top"><div><span class="eyebrow">DIA ${String(activeDay+1).padStart(2,'0')} · LEITURA</span><h2>${esc(ref(reading))}</h2><p>${esc(day.focus || 'Leia, observe e reflita.')}</p></div><button class="bookmark-button ${isDone?'bookmarked':''}" data-action="toggle-done" title="${isDone?'Marcar como não lido':'Marcar como lido'}" aria-label="${isDone?'Marcar como não lido':'Marcar como lido'}">${isDone?'✓':'○'}</button></div>
+    <section class="reader-panel" aria-label="Leitura bíblica"><div class="reader-top"><div><span class="eyebrow">DIA ${String(activeDay+1).padStart(2,'0')} · LEITURA</span><h2>${esc(ref(reading))}</h2><p>${esc(copy.focus || 'Leia, observe e reflita.')}</p></div><button class="bookmark-button ${isDone?'bookmarked':''}" data-action="toggle-done" title="${isDone?'Marcar como não lido':'Marcar como lido'}" aria-label="${isDone?'Marcar como não lido':'Marcar como lido'}">${isDone?'✓':'○'}</button></div>
       ${libraryData ? `<button class="reader-study-shortcut" data-action="open-library">Explorar ${esc(ref(reading))} no portal <span aria-hidden="true">↗</span></button>` : guide ? `<button class="reader-study-shortcut" data-action="open-deep-study">✳ Estudo completo já preparado <span>Explorar →</span></button>` : ''}
       ${day.readings.length > 1 ? `<div class="chapter-tabs" role="group" aria-label="Capítulos deste dia">${day.readings.map((r,index) => `<button class="chapter-tab ${index===activeReading?'active':''}" data-action="open-reading" data-index="${index}">${esc(ref(r))}</button>`).join('')}</div>` : ''}
       <div class="translation-tools"><label>Tradução <select id="version-select" aria-label="Tradução bíblica">${Object.entries(versions).map(([id,name]) => `<option value="${id}" ${selectedVersion===id?'selected':''}>${esc(name)}</option>`).join('')}</select></label><label class="compare-toggle"><input id="compare-toggle" type="checkbox" ${compareEnabled?'checked':''}> Comparar</label>${compareEnabled ? `<select id="compare-select" aria-label="Tradução para comparar">${Object.entries(versions).filter(([id]) => id!==selectedVersion).map(([id,name]) => `<option value="${id}" ${compareVersion===id?'selected':''}>${esc(name)}</option>`).join('')}</select>` : ''}</div>
@@ -405,9 +472,15 @@ document.addEventListener('click', async event => {
   const target = event.target.closest('[data-action]');
   if (!target) return;
   const action = target.dataset.action;
-  if (action === 'enter-well') return enterWellPortal(target);
+
   if (action === 'home') return showHome();
   if (action === 'dismiss') { message = ''; return render(); }
+  if(action==='choose-book'){
+    const form=document.querySelector('#chapter-browser');
+    rememberReading({bookId:Number(target.dataset.id),chapter:1});form.elements.bookId.value=browseReading.bookId;
+    form.elements.chapter.innerHTML=chapterOptions(browseReading);refreshBrowseCover();
+    document.querySelector('.book-index').open=false;form.elements.chapter.focus();return;
+  }
   if (action === 'browse-plans') { if(view!=='home')showHome(); document.querySelector('#planos')?.scrollIntoView({block:'start'});return; }
   if (action === 'go-plan') { const item = plan() || state.plans[0]; return item ? openPlan(item.id, nextDay(item)) : showHome(); }
   if (action === 'open-plan') { const item = state.plans.find(p => p.id===target.dataset.id); return item && openPlan(item.id, nextDay(item)); }
@@ -467,6 +540,16 @@ document.addEventListener('click', async event => {
 });
 
 document.addEventListener('submit', async event => {
+  if(event.target.id==='reference-search'){
+    event.preventDefault();const found=findChapter(document.querySelector('#book-search').value);
+    if(found)return enterLibraryPortal(document.querySelector('#book-search'),found);
+    const matches=document.querySelectorAll('.book-index [data-action="choose-book"]:not([hidden])');
+    if(matches.length===1)matches[0].click();return;
+  }
+  if(event.target.id==='chapter-browser'){
+    event.preventDefault();
+    return enterLibraryPortal(event.submitter || event.target.querySelector('button'), browseReading);
+  }
   const form = event.target;
   if (!['book-plan','ai-plan','question-form'].includes(form.id)) return;
   event.preventDefault();
@@ -501,6 +584,15 @@ document.addEventListener('submit', async event => {
 });
 
 document.addEventListener('input', event => {
+  if(event.target.id==='book-search'){
+    const term=foldBookName(event.target.value),found=findChapter(term);
+    const index=event.target.closest('.book-index');
+    const jump=index.querySelector('.ref-jump');jump.hidden=!found;
+    if(found)jump.textContent=`Abrir ${ref(found)} →`;
+    index.querySelectorAll('[data-action="choose-book"]').forEach(b=>{b.hidden=!!found || !foldBookName(b.textContent).includes(term);});
+    index.querySelectorAll('[data-testament]').forEach(s=>{s.hidden=!s.querySelector('button:not([hidden])');});
+    index.querySelector('.book-empty').hidden=!!found || !!index.querySelector('[data-action="choose-book"]:not([hidden])');return;
+  }
   if (event.target.id === 'theme-input') { draftTheme = event.target.value; return; }
   if (event.target.name === 'question') { draftQuestion = event.target.value; return; }
   if (event.target.id !== 'notes') return;
@@ -510,6 +602,13 @@ document.addEventListener('input', event => {
 });
 
 document.addEventListener('change', event => {
+  if(event.target.id==='language-choice')return switchLanguage(event.target.value);
+  if(event.target.form?.id==='chapter-browser'){
+    const fields=event.target.form.elements;
+    rememberReading({bookId:Number(fields.bookId.value),chapter:event.target.name==='bookId'?1:Number(fields.chapter.value)});
+    if(event.target.name==='bookId')fields.chapter.innerHTML=chapterOptions(browseReading);
+    refreshBrowseCover();return;
+  }
   if(event.target.id==='day-picker') { document.querySelector(`[data-action="open-day"][data-index="${Number(event.target.value)}"]`)?.click();return; }
   if (event.target.id === 'version-select') { selectedVersion = event.target.value; if (selectedVersion === compareVersion) compareVersion = Object.keys(versions).find(id => id !== selectedVersion); return loadChapter(); }
   if (event.target.id === 'compare-toggle') { compareEnabled = event.target.checked; if (selectedVersion === compareVersion) compareVersion = Object.keys(versions).find(id => id !== selectedVersion); return loadChapter(); }
@@ -518,9 +617,19 @@ document.addEventListener('change', event => {
 
 async function init() {
   try {
-    const [catalog,status,library,translations,guides,scenes] = await Promise.all([getJson('/api/books'),getJson('/api/status'),getJson('/api/studies'),getJson('/api/versions'),getJson('/api/book-guides'),staticFile('scenes/manifest.json').catch(()=>({passages:{}}))]);
-    books = catalog.books; aiReady = status.aiReady; hosted = Boolean(status.hosted); prebuiltStudies = library.studies; versions = translations.versions; bookGuides = guides.guides; passageImages = scenes.passages || {};
+    const [catalog,status,library,translations,guides,scenes] = await Promise.all([getJson('/api/books'),getJson('/api/status'),getJson('/api/studies'),getJson('/api/versions'),getJson('/api/book-guides'),staticFile(ENGLISH?'en/scenes.json':'scenes/manifest.json').catch(()=>({passages:{}}))]);
+    books = catalog.books;
+    if(!book(browseReading.bookId) || browseReading.chapter<1 || browseReading.chapter>book(browseReading.bookId).chapters)browseReading={bookId:1,chapter:1};
+     aiReady = status.aiReady; hosted = Boolean(status.hosted); prebuiltStudies = library.studies; versions = translations.versions; bookGuides = guides.guides; passageImages = scenes.passages || {};
+    let resume;
+    try {resume=JSON.parse(sessionStorage.getItem('poiema-return'));sessionStorage.removeItem('poiema-return');}catch{}
+    if(resume?.planId && state.plans.some(item=>item.id===resume.planId)){
+      openPlan(resume.planId,resume.day);if(resume.reading && plan().days[activeDay].readings[resume.reading]){activeReading=resume.reading;loadChapter();}return;
+    }
     render();
+    if(resume?.portal && book(resume.portal.bookId)){
+      await enterLibraryPortal(document.querySelector('#chapter-browser button'),{bookId:resume.portal.bookId,chapter:resume.portal.chapter},resume.portal);
+    }
   } catch(error) { $('#app').innerHTML = `<p class="loading">${esc(error.message)} Recarregue a página.</p>`; }
 }
 
