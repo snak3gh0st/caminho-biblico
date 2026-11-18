@@ -234,7 +234,7 @@ body.portal-open {overflow:hidden}
  .portal-dialog[open] .portal-photo {animation:portal-approach 1.35s ease-out both}
  .portal-dialog[open] .portal-study {animation:portal-ink 1.35s ease both}
  @keyframes portal-threshold {0%{clip-path:ellipse(2% 6% at 50% 48%);filter:brightness(1.18)}55%{clip-path:ellipse(28% 64% at 50% 48%)}100%{clip-path:ellipse(150% 150% at 50% 48%);filter:none}}
- @keyframes portal-approach {from{transform:scale(1.12);filter:grayscale(1) contrast(1.1)}to{transform:none;filter:grayscale(1)}}
+ @keyframes portal-approach {from{transform:scale(1.12);filter:contrast(1.1)}to{transform:none;filter:none}}
  @keyframes portal-ink {0%,42%{opacity:0}100%{opacity:1}}
 }
 .portal-film {display:flex;overflow-x:auto;gap:6px;margin-bottom:.8rem;padding:3px;scrollbar-width:thin}
@@ -316,7 +316,7 @@ body.portal-open {overflow:hidden}
 .hero-copy p {color:#ddd}
 .hero-copy .button-dark {background:white;color:#111}
 .hero-copy .text-link {color:white}
-img,video,.portal-arriving,.well-atlas,.portal-map {filter:grayscale(1)}
+
 ::selection {background:#333;color:#fff}
 :focus-visible {outline:2px solid currentColor;outline-offset:3px}
 .atlas-switch button[aria-pressed="true"] {background:#fff;color:#111;font-weight:700}
@@ -325,4 +325,80 @@ img,video,.portal-arriving,.well-atlas,.portal-map {filter:grayscale(1)}
  .brand {font-size:21px;gap:5px}
  .brand-mark {font-size:20px}
  .site-header nav {gap:10px}
+}
+
+/* The interface stays monochrome; scene art and maps retain their source colors. */
+.header-inner {justify-content:space-between;gap:1.25rem}
+.current-study {display:inline-flex;align-items:center}
+.hero {grid-template-columns:minmax(0,.86fr) minmax(0,1.14fr);margin-top:24px}
+.hero-copy {align-self:center;padding:clamp(32px,5vw,72px)}
+.hero-reference,.resume-label {font-size:.84rem;font-weight:600}
+.hero h1 {margin:.75rem 0 1rem;font-size:clamp(40px,4.7vw,72px);line-height:1.01}
+.hero p {max-width:45ch}
+.hero-credit {position:absolute;bottom:14px;right:14px;padding:5px 9px;border-radius:4px;background:#111c;color:#fff;font-size:11px}
+.hero-art.hero-raster::before {display:none}
+.section {padding-top:clamp(34px,5vw,64px)}
+.section-heading {gap:1rem;margin-bottom:1rem;align-items:center}
+.section-heading h2 {margin:0}
+.reading-plans {display:grid;grid-template-columns:1fr 1fr;column-gap:2rem}
+.reading-plan {min-width:0;display:grid;grid-template-columns:96px 1fr auto;gap:1rem;align-items:center;background:#fff;color:#171717;border:0;border-top:1px solid #d8d8d8;padding:1rem 0;text-align:left}
+.reading-plan img {display:block;width:96px;height:76px;object-fit:cover;border-radius:5px}
+.reading-plan>span {display:grid;gap:.22rem;min-width:0}
+.reading-plan small {color:#555}
+.reading-plan strong {font:400 1.45rem/1.12 var(--serif)}
+.reading-plan>span>span {font-size:.87rem;line-height:1.45;color:#505050}
+.reading-plan:hover {opacity:1;background:#f6f6f6}
+.creation-grid:has(> :only-child) {display:block}
+.creation-grid:has(> :only-child) .creation-card {display:grid;grid-template-columns:max-content minmax(145px,1fr) max-content minmax(140px,.8fr) auto;align-items:center;gap:1rem}
+.creation-grid:has(> :only-child) .creation-card>* {margin:0}
+.continue-card {background:#f5f5f5;color:#191919;border-radius:8px;padding:20px 24px}
+.continue-card h2 {margin:.25rem 0}
+.continue-card p {color:#505050}
+.continue-card .progress-track {background:#ddd}.continue-card .progress-track span {background:#222}
+.continue-card .button-light {background:#171717;color:#fff}
+.workspace-grid {grid-template-columns:minmax(165px,220px) minmax(0,840px);justify-content:center;column-gap:clamp(16px,3vw,44px);row-gap:20px;padding-bottom:32px}
+.workspace-head {align-items:center}.workspace-head h1 {text-wrap:balance}
+.reader-panel {padding:clamp(20px,3vw,46px)}
+.scripture {max-width:72ch;margin-inline:auto}
+.study-panel {grid-column:2;padding:20px 28px}
+.study-panel .notes-block {border:0;margin:0;padding:0}
+.notes-block h3 {margin-bottom:12px}
+.study-panel textarea {font-size:15px}
+.day-picker {display:none}
+.portal-study>nav {gap:4px}
+.portal-study>nav button {padding-inline:.7rem}
+.portal-caption {max-width:min(100%,46rem)}
+.portal-caption .portal-film {margin:.75rem 0 0;padding:3px;gap:.45rem}
+.portal-caption .portal-film button {flex:0 0 62px;position:relative;height:38px;border:0;padding:0;overflow:hidden;border-radius:4px}
+.portal-caption .portal-film button[aria-pressed=true] {outline:2px solid white}
+.portal-study .portal-note>p,.portal-study .well-answer {max-width:70ch}
+@media(max-width:849px){
+ .hero {grid-template-columns:1fr 1fr}.hero-art.hero-raster {min-height:300px}
+ .reading-plans {grid-template-columns:1fr}
+ .workspace-grid {display:block;margin-inline:0}
+ .day-picker {display:flex;align-items:center;gap:12px;font-size:14px;font-weight:600;padding:12px 16px}
+ .day-picker select {flex:1;min-width:0;min-height:42px;padding:.4rem;background:#fff;border:1px solid #bbb;border-radius:5px}
+ .days-panel .panel-heading,.days-panel .day-list {display:none}
+ .days-panel {position:static;margin-bottom:12px}
+ .study-panel {margin:1rem 0}
+ .creation-grid:has(> :only-child) .creation-card {grid-template-columns:max-content minmax(0,1fr)}
+ .creation-grid:has(> :only-child) .creation-card .button {grid-column:1/-1;justify-content:center}
+}
+@media(max-width:600px){
+ .hero {display:flex;flex-direction:column-reverse;margin-top:12px}
+ .hero-copy {align-self:stretch;padding:23px}
+ .hero-copy h1 br {display:none}.hero-copy h1 em::before {content:' '}
+ .hero-art.hero-raster {min-height:0;aspect-ratio:2.1}
+ .hero-actions {gap:16px}.hero-copy p {margin-bottom:16px}
+ .reading-plan {grid-template-columns:72px 1fr auto;gap:12px}
+ .reading-plan img {width:72px;height:68px}
+ .reading-plan strong {font-size:1.22rem}
+ .section-heading {align-items:start}.section-heading h2 {font-size:1.7rem}
+ .workspace-head {align-items:start}
+ .day-picker {padding:8px 12px}
+ .reader-panel,.study-panel,.days-panel {border-radius:8px}
+ .portal-rail {padding:10px}.portal-caption .portal-film button {flex-basis:48px;height:30px}
+ .portal-dialog .portal-stage {min-height:max(320px,46svh)}
+ .portal-dialog .portal-caption {padding:15px}
+ .portal-study>nav button {font-size:.82rem;padding-inline:.55rem}
 }

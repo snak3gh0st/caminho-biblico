@@ -95,19 +95,19 @@ class PassagePortal extends HTMLElement {
     this.disposeAtlas();
     const scene = passageScene(this.reading, this.part);
     const expanded = this.hasAttribute('expanded');
-    const primary = [['cena','Investigar'],['mapa','Mapas'],['estudiosos','Estudiosos'],['tempo','Época'],['ecos','Conexões']];
-    if (this.guide) primary.push(['voz','Palavra-chave']);
-    const secondary = [['panorama','Panorama'],['livro','Sobre o livro'],['contexto','Dossiê histórico'],['pratica','Reflexão']];
+    const primary = [['cena','Investigar'],['mapa','Mapas'],['estudiosos','Estudiosos'],['ecos','Conexões']];
+
+    const secondary = [['tempo','Época'],...(this.guide ? [['voz','Palavra-chave']] : []),['panorama','Panorama'],['livro','Sobre o livro'],['contexto','Dossiê histórico'],['pratica','Reflexão']];
     if (prebuiltStudies[key(this.reading)]) secondary.push(['editorial','Guia editorial']);
     if (this.guide) secondary.push(['filme','Filme']);
     const buttons = items=>items.map(([id,name])=>`<button data-p="${id}" aria-pressed="${this.topic===id}">${name}</button>`).join('');
     this.innerHTML = `<div class="portal-stage">
       <img class="portal-photo" alt="${esc(scene.alt)}" src="./scenes/${esc(scene.file)}">
-      <div class="portal-rail"><span>${esc(ref(this.reading))} · v. ${this.part.from}–${this.part.to}</span><button data-p="expand">${expanded?'Voltar à leitura ×':'Atravessar o portal ↗'}</button></div>
+      <div class="portal-rail"><span>${esc(ref(this.reading))} · v. ${this.part.from}–${this.part.to}</span><button data-p="expand">${expanded?'Fechar portal ×':'Atravessar o portal ↗'}</button></div>
       <button class="portal-pin" data-p="inspect" aria-expanded="false"><i aria-hidden="true"></i>${esc(this.detail?.[0] || 'Observar o trecho')}</button>
       <div class="portal-caption"><small>${scene.thematic?'Ambientação temática':'Cena interpretativa'} · IA</small><h3>${esc(this.guide?.title || this.part.title)}</h3>
-      <div class="portal-pages"><button aria-label="Cena anterior" data-p="prev" ${this.index?'':'disabled'}>←</button><span>Cena ${this.index+1} de ${this.parts.length}</span><button aria-label="Próxima cena" data-p="next" ${this.index+1===this.parts.length?'disabled':''}>→</button></div></div></div>
-      <div class="portal-study"><div class="portal-film" aria-label="Escolher cena">${this.parts.map((p,i)=>`<button data-p="frame" data-i="${i}" aria-label="Cena ${i+1}. ${esc(p.title)}" aria-pressed="${this.index===i}"><img alt="" loading="lazy" src="./scenes/${esc(passageScene(this.reading,p).file)}"><span>${p.from}–${p.to}</span></button>`).join('')}</div><nav aria-label="Investigar a cena">${buttons(primary)}</nav><details class="portal-more" ${secondary.some(([id])=>id===this.topic)?'open':''}><summary>Mais do estudo de ${esc(ref(this.reading))}</summary><nav aria-label="Aprofundar o estudo">${buttons(secondary)}</nav></details><div class="portal-note" tabindex="-1"></div></div>`;
+      <div class="portal-pages"><button aria-label="Cena anterior" data-p="prev" ${this.index?'':'disabled'}>←</button><span>Cena ${this.index+1} de ${this.parts.length}</span><button aria-label="Próxima cena" data-p="next" ${this.index+1===this.parts.length?'disabled':''}>→</button></div><div class="portal-film" aria-label="Escolher cena">${this.parts.map((p,i)=>`<button data-p="frame" data-i="${i}" aria-label="Cena ${i+1}. ${esc(p.title)}" aria-pressed="${this.index===i}"><img alt="" loading="lazy" src="./scenes/${esc(passageScene(this.reading,p).file)}"><span>${p.from}–${p.to}</span></button>`).join('')}</div></div></div>
+      <div class="portal-study"><nav aria-label="Investigar a cena">${buttons(primary)}</nav><details class="portal-more" ${secondary.some(([id])=>id===this.topic)?'open':''}><summary>Época, ${this.guide?'palavra-chave':'livro'} e mais</summary><nav aria-label="Aprofundar o estudo">${buttons(secondary)}</nav></details><div class="portal-note" tabindex="-1"></div></div>`;
     this.panel();
   }
   panel() {
@@ -164,7 +164,7 @@ class PassagePortal extends HTMLElement {
     const map = this.atlasMap = L.map(node,{scrollWheelZoom:false,maxZoom:17});
     this.markers = new Map();
     places.forEach(place=>{
-      const marker = L.circleMarker([place.latitude,place.longitude],{radius:6,color:'#161616',weight:2,fillColor:'#fff',fillOpacity:1}).addTo(map);
+      const marker = L.circleMarker([place.latitude,place.longitude],{radius:6,color:'#161616',weight:2,fillColor:'#e5b86e',fillOpacity:1}).addTo(map);
       marker.bindTooltip(esc(atlasLabel(place)),{direction:'top'});
       marker.on('click',()=>this.selectPlace(place.name)); this.markers.set(place.name,marker);
     });
@@ -190,7 +190,7 @@ class PassagePortal extends HTMLElement {
       }
       if(historic && this.guide) this.overlay=L.imageOverlay('./scenes/john4-relief.webp',[[31.56,34.68],[33.06,35.82]],{attribution:'Terrain Tiles'}).addTo(map);
       const stops=(narrativeJourneys[key(this.reading)] || []).map(n=>this.markers.get(n)?.getLatLng()).filter(Boolean);
-      if(historic && stops.length>1) this.route=L.polyline(stops,{interactive:false,color:'#444',weight:2,dashArray:'5 6'}).addTo(map);
+      if(historic && stops.length>1) this.route=L.polyline(stops,{interactive:false,color:'#8b542e',weight:2,dashArray:'5 6'}).addTo(map);
     }
     this.querySelectorAll('[data-p="era"]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.era===era)));
     this.selectPlace(this.atlasPlace);
@@ -201,7 +201,7 @@ class PassagePortal extends HTMLElement {
     const select=this.querySelector('.atlas-picker select');select.value=name;
     const marker=this.markers?.get(name);
     if(marker){
-      this.markers.forEach((m,k)=>m.setStyle({radius:k===name?9:6,weight:k===name?3:2,color:k===name?'#fff':'#161616',fillColor:k===name?'#222':'#fff'}));
+      this.markers.forEach((m,k)=>m.setStyle({radius:k===name?9:6,weight:k===name?3:2,color:k===name?'#fff':'#161616',fillColor:k===name?'#973e21':'#e5b86e'}));
       if(center)this.atlasMap.setView(marker.getLatLng(),Math.max(this.atlasMap.getZoom(),8));
       marker.bringToFront().openTooltip();
     }
