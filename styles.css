@@ -443,3 +443,12 @@ body.portal-open {overflow:hidden}
 #reference-search {display:flex;align-items:end;gap:.8rem;flex-wrap:wrap;margin:.8rem 0}
 #reference-search label {flex:1;margin:0;min-width:min(240px,100%)}
 .book-index .ref-jump {color:white;background:#171717;min-height:41px}
+
+.verse-hint{font:500 .82rem/1.5 var(--sans);color:inherit;opacity:.78}
+button.verse-trigger,.portal-note button.verse-trigger{display:block;width:100%;font:inherit;text-align:start;line-height:1.65;color:inherit;background:transparent;border:0;border-radius:5px;padding:.32em .15em;letter-spacing:normal}
+.verse-trigger:hover,.verse-trigger[aria-expanded=true]{background:rgba(127,127,127,.12)}
+.verse-trigger:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+.verse-plus{font:500 .78em var(--sans);opacity:.65;margin-inline-start:.45em}
+.verse-trigger[aria-expanded=true] .verse-plus{display:inline-block;transform:rotate(45deg)}
+.verse-insight{grid-column:1/-1;border-inline-start:2px solid currentColor;margin:.5em 0 1.2em;padding:.5em 1em;font:400 1rem/1.55 var(--sans);text-align:start}
+.verse-insight h4{font:600 1.25rem/1.3 var(--serif);margin:.3rem 0}.verse-insight p{margin:.45rem 0 1rem}.verse-insight small,.verse-comment strong{font-size:.8rem}.verse-insight summary{cursor:pointer;padding:.45rem 0}.verse-comment{border-top:1px solid #8886;padding-top:.65rem}

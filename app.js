@@ -416,6 +416,49 @@ function connectionOverlay() {
 
   return `<div class="connection-overlay" role="presentation"><section class="connection-dialog" role="dialog" aria-modal="true" aria-label="Comparar passagens bíblicas" tabindex="-1"><button class="connection-close" data-action="close-connection" aria-label="Fechar comparação">×</button><span class="eyebrow">CONEXÃO ENTRE TEXTOS</span><h2>${esc(sourceName)} ↔ ${esc(targetName)}</h2><p class="library-intro">Leia cada versículo no contexto do seu capítulo. A referência sugere uma relação para investigar.</p><div class="verse-pair"><article><strong>${esc(sourceName)}</strong><p>${esc(sourceVerse)}</p></article><article><strong>${esc(targetName)}</strong><p>${connection.loading?'Carregando texto…':connection.error?esc(connection.error):esc(targetVerse)}</p></article></div>${contextHtml}<p class="connection-version">Tradução: ${esc(versions[selectedVersion])}</p><div class="connection-actions"><button class="button button-outline" data-action="connection-context" aria-expanded="${Boolean(connection.showContext)}" ${connection.loading || connection.error?'disabled':''}>${connection.showContext?'Recolher contexto':'Ver contexto dos versículos'}</button><button class="button button-outline" data-action="crossref" data-index="${nextIndex}">Próxima conexão →</button><button class="button button-dark" data-action="open-target" ${connection.loading?'disabled':''}>Ler ${esc(book(link.bookId)?.name)} ${link.chapter} →</button><button class="button button-outline" data-action="close-connection">Continuar neste capítulo</button></div></section></div>`;
 }
+function interactiveVerse(number, text, data) {
+  const content = `<sup>${number}</sup> ${esc(text)}`;
+  if (!data?.study) return `<p class="verse">${content}</p>`;
+  return `<button type="button" class="verse verse-trigger" data-study-verse="${number}" aria-expanded="false">${content}<span aria-hidden="true" class="verse-plus">＋</span></button>`;
+}
+
+function verseInsight(data, number) {
+  const part = data.study.outline.find(p => p.from <= number && p.to >= number);
+  const notes = data.study.scholarViews.filter(n => n.verse === number);
+  const links = data.crossRefs.filter(r => r.fromVerse === number);
+  const sources = data.sources || [];
+  return `<div class="verse-insight"><small>Estudo com IA</small>
+    ${part ? `<h4>${esc(part.title)}</h4><small>Contexto do trecho · v. ${part.from}–${part.to}</small><p>${esc(part.explanation)}</p>` : ''}
+    ${notes.map(n => { const source = sources.find(s => s.id === n.sourceId);
+      return `<div class="verse-comment"><strong>${source ? `<a href="${esc(source.url)}" target="_blank" rel="noopener">${esc(source.author)} ↗</a>` : esc(n.sourceId)}</strong><p>${esc(n.insight)}</p></div>`;
+    }).join('')}
+    ${links.map(r => `<details data-parallel-book="${r.bookId}" data-chapter="${r.chapter}" data-number="${r.verse}"><summary>${esc(ref(r))}:${r.verse}</summary><p aria-live="polite"></p></details>`).join('')}
+    ${data.study.context ? `<details><summary>Contexto do capítulo</summary><p>${esc(data.study.context)}</p></details>` : ''}
+  </div>`;
+}
+
+document.addEventListener('click', event => {
+  const button = event.target.closest('[data-study-verse]');
+  if (!button) return;
+  const row = button.closest('.verse-row');
+  const previous = row.querySelector('.verse-insight');
+  if (previous) { previous.remove(); button.setAttribute('aria-expanded','false'); return; }
+  const data = button.closest('passage-portal')?.data || libraryData;
+  if (!data) return;
+  row.insertAdjacentHTML('beforeend',verseInsight(data,Number(button.dataset.studyVerse)));
+  button.setAttribute('aria-expanded','true');
+});
+
+document.addEventListener('toggle', async event => {
+  const details = event.target;
+  if (!details.open || !details.matches?.('[data-parallel-book]')) return;
+  const line = details.querySelector('p');
+  line.textContent = 'Carregando texto…';
+  const bookText = await portalBookText(Number(details.dataset.parallelBook));
+  const verse = bookText?.[details.dataset.chapter]?.[details.dataset.number];
+  line.textContent = verse ? verse + ' · ' + (ENGLISH ? 'World English Bible' : 'Bíblia Portuguesa Mundial') : 'Texto indisponível nesta edição.';
+},true);
+
 function planView() {
   const item = plan();
   if (!item) return home();
@@ -433,7 +476,7 @@ function planView() {
       ${libraryData ? `<button class="reader-study-shortcut" data-action="open-library">Explorar ${esc(ref(reading))} no portal <span aria-hidden="true">↗</span></button>` : guide ? `<button class="reader-study-shortcut" data-action="open-deep-study">✳ Estudo completo já preparado <span>Explorar →</span></button>` : ''}
       ${day.readings.length > 1 ? `<div class="chapter-tabs" role="group" aria-label="Capítulos deste dia">${day.readings.map((r,index) => `<button class="chapter-tab ${index===activeReading?'active':''}" data-action="open-reading" data-index="${index}">${esc(ref(r))}</button>`).join('')}</div>` : ''}
       <div class="translation-tools"><label>Tradução <select id="version-select" aria-label="Tradução bíblica">${Object.entries(versions).map(([id,name]) => `<option value="${id}" ${selectedVersion===id?'selected':''}>${esc(name)}</option>`).join('')}</select></label><label class="compare-toggle"><input id="compare-toggle" type="checkbox" ${compareEnabled?'checked':''}> Comparar</label>${compareEnabled ? `<select id="compare-select" aria-label="Tradução para comparar">${Object.entries(versions).filter(([id]) => id!==selectedVersion).map(([id,name]) => `<option value="${id}" ${compareVersion===id?'selected':''}>${esc(name)}</option>`).join('')}</select>` : ''}</div>
-      <div class="reader-rule"></div><div class="scripture ${comparisonData?'scripture-compare':''}">${busy==='chapter'?'<p class="muted">Carregando o capítulo…</p>':chapterData ? `${comparisonData ? `<div class="compare-head"><strong>${esc(chapterData.versionName)}</strong><strong>${esc(comparisonData.versionName)}</strong></div>` : ''}${chapterData.verses.map((verse,index) => `<div class="verse-row ${comparisonData?'paired':''}" id="v${index+1}"><p class="verse"><sup>${index+1}</sup>${esc(verse)}</p>${comparisonData ? `<p class="verse"><sup>${index+1}</sup>${esc(comparisonData.verses[index] || '')}</p>` : ''}</div>`).join('')}` : '<p class="muted">Não foi possível carregar o texto. <button class="inline-button" data-action="retry-chapter">Tentar novamente</button></p>'}</div>
+      <div class="reader-rule"></div>${libraryData && chapterData ? '<p class="verse-hint">Toque em um versículo para consultar o estudo.</p>' : ''}<div class="scripture ${comparisonData?'scripture-compare':''}">${busy==='chapter'?'<p class="muted">Carregando o capítulo…</p>':chapterData ? `${comparisonData ? `<div class="compare-head"><strong>${esc(chapterData.versionName)}</strong><strong>${esc(comparisonData.versionName)}</strong></div>` : ''}${chapterData.verses.map((verse,index) => `<div class="verse-row ${comparisonData?'paired':''}" id="v${index+1}">${interactiveVerse(index+1,verse,libraryData)}${comparisonData ? `<p class="verse"><sup>${index+1}</sup>${esc(comparisonData.verses[index] || '')}</p>` : ''}</div>`).join('')}` : '<p class="muted">Não foi possível carregar o texto. <button class="inline-button" data-action="retry-chapter">Tentar novamente</button></p>'}</div>
       ${chapterData ? `<div class="translation-credit"><strong>${esc(chapterData.versionName)}</strong><br>${esc(chapterData.copyright)}<br><a href="${esc(chapterData.sourceUrl)}" target="_blank" rel="noopener noreferrer">Ver fonte do capítulo ↗</a>${comparisonData ? `<br><br><strong>${esc(comparisonData.versionName)}</strong><br>${esc(comparisonData.copyright)}<br><a href="${esc(comparisonData.sourceUrl)}" target="_blank" rel="noopener noreferrer">Ver fonte da comparação ↗</a>` : ''}</div><div class="translation-more">Quer consultar <em>A Mensagem</em>? <a href="https://www.editoravida.com.br/a-mensagem-capa-luxo-laranja-e-verde.html" target="_blank" rel="noopener noreferrer">Conheça a edição oficial ↗</a> <small>Obra com direitos reservados; o texto integral não é reproduzido aqui.</small></div>` : ''}
       <div class="reading-actions"><button class="button ${isDone?'button-outline':'button-dark'}" data-action="toggle-done">${isDone?'✓ Leitura concluída':'Marcar como lido'} <span aria-hidden="true">${isDone?'':'→'}</span></button><button class="text-link" data-action="next-day">Próximo dia <span aria-hidden="true">→</span></button></div>
     </section>
