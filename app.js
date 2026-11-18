@@ -54,7 +54,19 @@ function percentage(item) { return Math.round((completed(item) / totalReadings(i
 function nextDay(item) { const index = item.days.findIndex(day => day.readings.some(reading => !item.done.includes(key(reading)))); return index < 0 ? 0 : index; }
 function notify(text) { message = text; render(); }
 
+const discoveryBooks=new Map();
 async function getJson(url, options) {
+  const match=url.match(/^\/api\/library\/(\d+)\/(\d+)$/);
+  if(!match)return getResource(url,options);
+  const [,id,chapter]=match;
+  const data=await getResource(url,options);
+  if(!discoveryBooks.has(id))discoveryBooks.set(id,staticFile('media/discoveries/'+id+'.json').catch(()=>{
+    discoveryBooks.delete(id);return {};
+  }));
+  const index=await discoveryBooks.get(id);
+  return {...data,discoveries:index[chapter] || []};
+}
+async function getResource(url, options) {
   if(ENGLISH) {
     if(url==='/api/books')return {books:await staticFile('en/books.json')};
     if(url==='/api/studies')return {studies:await staticFile('en/studies.json')};
@@ -447,15 +459,43 @@ function readingPrompt(id) {
   if ((id>=23 && id<=39)||id===66) return studyLanguage(['Quem fala e a quem? Procure no trecho uma imagem que dê força à sua mensagem.','Who is speaking, and to whom? Find an image in the passage that gives the message force.']);
   return studyLanguage(['Quem age ou fala neste trecho? Releia o versículo seguinte e observe o que muda.','Who acts or speaks here? Read the following verse and notice what changes.']);
 }
+function discoveryAt(data, number) {
+  return data?.discoveries?.find(entry => entry.verse === number);
+}
+function wordForm(entry) {
+  return `<bdi lang="${entry.language}" dir="${entry.language==='grc'?'ltr':'rtl'}">${esc(entry.form)}</bdi>`;
+}
+function wordDiscovery(entry) {
+  if (!entry) return '';
+  const languages={he:['Hebraico','Hebrew'],arc:['Aramaico','Aramaic'],grc:['Grego','Greek']};
+  const language=studyLanguage(languages[entry.language]);
+  const glossary=ENGLISH ? entry.gloss : entry.pt || entry.gloss;
+  const source='https://biblehub.com/'+(entry.language==='grc'?'greek/':'hebrew/')+entry.strong.slice(1)+'.htm';
+  let parallel='';
+  if(entry.parallel) {
+    const [bookId,chapter,verse]=entry.parallel;
+    const other=ENGLISH ? entry.parallelGloss : entry.parallelPt || entry.parallelGloss;
+    parallel=`<details data-parallel-book="${bookId}" data-chapter="${chapter}" data-number="${verse}"><summary>${esc(studyLanguage(['A mesma palavra em','The same word in']))} ${esc(ref({bookId,chapter}))}:${verse}</summary><p aria-live="polite"></p><small data-link-reason>${esc(studyLanguage(['A concordância registra o mesmo termo. Neste segundo versículo, o interlinear o traduz por','The concordance indexes the same term. In this second verse, the interlinear renders it as']))} “${esc(other)}”.${!ENGLISH ? ` <span lang="en">(BSB: ${esc(entry.parallelGloss)})</span>` : ''}</small></details>`;
+  }
+  return `<section class="lexical-discovery"><small>${esc(language)} · v. ${entry.verse}</small><h4>${wordForm(entry)} <span>${esc(entry.translit)}</span></h4><p>${esc(studyLanguage(['Sentido nesta passagem','Rendering in this passage']))} · <strong>${esc(glossary)}</strong>${!ENGLISH ? ` <small lang="en">BSB · ${esc(entry.gloss)}</small>` : ''}</p>${parallel}<div class="discovery-sources"><a href="${source}" target="_blank" rel="noopener">Strong ${esc(entry.strong)} ↗</a><a href="https://berean.bible/downloads.htm" target="_blank" rel="noopener">${esc(studyLanguage(['Interlinear Bereano','Berean interlinear']))} ↗</a></div></section>`;
+}
+function discoveryAnchor(text, entry) {
+  if(!entry)return '';
+  const gloss=ENGLISH?entry.gloss:entry.pt;
+  const candidates=new Set((gloss || '').toLocaleLowerCase().match(/[\p{L}]{3,}/gu) || []);
+  const stop=new Set(['the','and','for','his','her','was','are','from','with','uma','seu','sua','dos','das','por','que','com','para','ele','ela','eles','elas']);
+  return (text.match(/[\p{L}]+/gu)||[]).filter(w=>candidates.has(w.toLocaleLowerCase())&&!stop.has(w.toLocaleLowerCase())).sort((a,b)=>b.length-a.length)[0] || '';
+}
 function interactiveVerse(number, text, data) {
   text=String(text || '');
   const note=data && fieldNote(data,number);
   const part=data?.study?.outline?.find(p=>number===p.from);
   const words=new Set(contentWords(part?.title || '').map(w=>w.toLowerCase()));
-  const anchor=note && text.match(note.terms)?.[0] || contentWords(text).find(w=>words.has(w.toLowerCase()));
+  const discovery=discoveryAt(data,number);
+  const anchor=note && text.match(note.terms)?.[0] || discoveryAnchor(text,discovery) || contentWords(text).find(w=>words.has(w.toLowerCase()));
   const content = `<sup>${number}</sup> <span class="verse-text">${highlightedText(text,anchor)}</span>`;
   if (!data?.study) return `<p class="verse">${content}</p>`;
-  return `<button type="button" class="verse verse-trigger" data-study-verse="${number}" aria-expanded="false">${content}<span aria-hidden="true" class="verse-plus">＋</span></button>`;
+  return `<button type="button" class="verse verse-trigger" data-study-verse="${number}" aria-expanded="false">${content}${discovery ? ` <small class="discovery-tag">${esc(studyLanguage(['Palavra original','Original word']))}</small>` : ''}<span aria-hidden="true" class="verse-plus">＋</span></button>`;
 }
 
 function verseInsight(data, number, verses, inPortal) {
@@ -473,6 +513,7 @@ function verseInsight(data, number, verses, inPortal) {
   const sources = data.sources || [];
   return `<div class="verse-insight"><small>Estudo com IA</small>
     ${note?`<h4>${esc(studyLanguage(note.question))}</h4><p>${esc(studyLanguage(note.answer))}</p>`:''}
+    ${wordDiscovery(discoveryAt(data,number))}
     ${note?.original ? `<details><summary>${esc(studyLanguage(['Palavra original','Original word']))}</summary><p><bdi lang="${note.original[2]==='he'?'he':'grc'}">${esc(note.original[0])}</bdi> · ${esc(note.original[1])} · ${esc(studyLanguage(note.original[3]))}</p></details>` : ''}
     ${part ? `<h4>${esc(part.title)}</h4><small>Contexto do trecho · v. ${part.from}–${part.to}</small><p>${esc(part.explanation)}</p>` : ''}
     ${notes.map(n => { const source = sources.find(s => s.id === n.sourceId);

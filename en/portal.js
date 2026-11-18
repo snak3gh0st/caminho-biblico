@@ -169,8 +169,10 @@ class PassagePortal extends HTMLElement {
     const place=this.data.places?.find(loc=>loc.verses?.some(v=>v>=p.from && v<=p.to));
     const evidence=this.guide?'':`<div class="scene-evidence">${annotation?`<details><summary>${esc(this.data.sources.find(src=>src.id===annotation.sourceId)?.author || annotation.sourceId)} · v. ${annotation.verse}</summary><p>${esc(annotation.insight)}</p></details>`:''}${place?`<button data-p="scene-location">Locate ${esc(atlasLabel(place))} ↗</button>`:''}</div>`;
     this.scenePlace=place?.name;
+    const discovery=this.data.discoveries?.find(entry=>entry.start===p.from && entry.end===p.to);
+    const exploreWord=discovery?`<button class="scene-word" data-p="lexical" data-i="${discovery.verse}"><span>${esc(studyLanguage(['Descobrir a palavra','Explore the word']))} · v. ${discovery.verse}</span> ${wordForm(discovery)} →</button>`:'';
     const lines = Array.from({length:p.to-p.from+1},(_,i)=>this.translation?.verses?.[p.from+i-1] || this.text?.[p.from+i]);
-    el.innerHTML = `<small>${esc(this.detail?.[2] || ref(this.reading)+' · v. '+p.from+'–'+p.to)}</small>${this.guide ? `<h4>${esc(this.guide.question)}</h4><div class="well-choices">${this.guide.choices.map(([label],i)=>`<button data-p="discover" data-i="${i}">${esc(label)} →</button>`).join('')}</div><div class="well-answer" aria-live="polite"></div><button data-p="guide-audio">▷ Play Portuguese guide</button><label class="scene-autoplay"><input type="checkbox" data-continue ${this.continueAudio?'checked':''}> Continue in the upcoming scenes</label>` : `<h4>Inside the passage</h4><p>${esc(p.explanation)}</p>`}${evidence}${lines.some(Boolean)?`<details><summary>Read the passage · ${esc(this.translation?.versionName || "World English Bible")}</summary><p class="verse-hint">Select a verse to explore its study notes.</p>${lines.map((v,i)=>`<div class="verse-row">${interactiveVerse(p.from+i,v,this.data)}</div>`).join('')}</details>`:''}`;
+    el.innerHTML = `<small>${esc(this.detail?.[2] || ref(this.reading)+' · v. '+p.from+'–'+p.to)}</small>${this.guide ? `<h4>${esc(this.guide.question)}</h4><div class="well-choices">${this.guide.choices.map(([label],i)=>`<button data-p="discover" data-i="${i}">${esc(label)} →</button>`).join('')}</div><div class="well-answer" aria-live="polite"></div><button data-p="guide-audio">▷ Play Portuguese guide</button><label class="scene-autoplay"><input type="checkbox" data-continue ${this.continueAudio?'checked':''}> Continue in the upcoming scenes</label>` : `<h4>Inside the passage</h4><p>${esc(p.explanation)}</p>`}${evidence}${lines.some(Boolean)?exploreWord:''}${lines.some(Boolean)?`<details><summary>Read the passage · ${esc(this.translation?.versionName || "World English Bible")}</summary><p class="verse-hint">Select a verse to explore its study notes.</p>${lines.map((v,i)=>`<div class="verse-row">${interactiveVerse(p.from+i,v,this.data)}</div>`).join('')}</details>`:''}`;
   }
   atlas(el) {
     const places = this.data.places || [];
@@ -333,6 +335,11 @@ class PassagePortal extends HTMLElement {
     if (action === 'discover') {
       this.querySelectorAll('[data-p="discover"]').forEach(btn=>btn.setAttribute('aria-pressed',String(btn===b)));
       this.querySelector('.well-answer').innerHTML = `<p>${esc(this.guide.choices[Number(b.dataset.i)][1])}</p><small>${esc(this.guide.source)}</small>`;
+      return;
+    }
+    if(action==='lexical'){
+      const row=this.querySelector(`[data-study-verse="${Number(b.dataset.i)}"]`);
+      if(row){row.closest('details').open=true;if(row.getAttribute('aria-expanded')!=='true')row.click();row.focus();}
       return;
     }
     if(action==='verse-place'){this.atlasPlace=b.dataset.place;this.returnVerse=Number(b.dataset.returnVerse);this.querySelector('[data-p="mapa"]').click();return;}

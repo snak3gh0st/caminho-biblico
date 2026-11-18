@@ -472,3 +472,8 @@ input,select,textarea,option{background-color:#1c1c1c;color:#f4f4f4;border-color
 button[aria-pressed=true]:not(.verse-trigger),.atlas-switch button[aria-pressed=true]{border-color:#eee;box-shadow:inset 0 -2px #eee}
 ::selection{background:#ddd;color:#111}
 .portal-map .leaflet-tooltip,.portal-map .leaflet-control a,.portal-map .leaflet-control-attribution{color:#151515}
+.lexical-discovery{border-block:1px solid #404040;padding:1rem 0;margin:.7rem 0}
+.lexical-discovery h4 bdi,.scene-word bdi{font-family:Georgia,serif;font-size:1.35em}
+.lexical-discovery h4 span{font:400 .9rem var(--sans);color:#ccc}
+.discovery-sources{display:flex;gap:1rem;flex-wrap:wrap;margin-top:.75rem;font-size:.78rem}
+.discovery-tag{display:inline-block;font:500 .69rem var(--sans);padding:.2em .5em;border:1px solid #777;border-radius:4px;vertical-align:middle}
