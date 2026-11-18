@@ -245,9 +245,9 @@ document.addEventListener('click', async event => {
   }
   if (action === 'open-day') { activeDay = Number(target.dataset.index); activeReading = 0; answer = ''; draftQuestion = ''; studyTab = 'panorama'; selectedMovement = 0; loadChapter(); return scrollToReader(); }
   if (action === 'open-reading') { activeReading = Number(target.dataset.index); answer = ''; draftQuestion = ''; studyTab = 'panorama'; selectedMovement = 0; loadChapter(); return scrollToReader(); }
-  if (action === 'open-deep-study') return $('#estudo-completo')?.scrollIntoView({ behavior:'instant', block:'start' });
-  if (action === 'study-tab') { studyTab = target.dataset.tab; render(); return $('#estudo-completo')?.scrollIntoView({ behavior:'instant', block:'start' }); }
-  if (action === 'back-to-reading') return $('.reader-panel')?.scrollIntoView({ behavior:'instant', block:'start' });
+  if (action === 'open-deep-study') return $('#estudo-completo')?.scrollIntoView({ behavior:'auto', block:'start' });
+  if (action === 'study-tab') { studyTab = target.dataset.tab; render(); return $('#estudo-completo')?.scrollIntoView({ behavior:'auto', block:'start' }); }
+  if (action === 'back-to-reading') return $('.reader-panel')?.scrollIntoView({ behavior:'auto', block:'start' });
   if (action === 'movement') { selectedMovement = Number(target.dataset.index); return render(); }
   if (action === 'focus-verse') return $(`#v${Number(target.dataset.verse)}`)?.scrollIntoView({ behavior:'smooth', block:'center' });
   if (action === 'focus-notes') { $('#notes')?.scrollIntoView({ behavior:'smooth', block:'center' }); return $('#notes')?.focus(); }
