@@ -48,7 +48,34 @@ const modernPlaces = {
   Galilee:["Galilee","Galilee, North Israel","The region extends beyond the lake. The marker offers a regional reference."]
 };
 const wellStops = ['Jerusalem','Sychar','Cana','Capernaum'];
-function atlasLabel(place) { return modernPlaces[place.name]?.[0] || place.name; }
+const portugueseAtlasNames={Ephesus:'Éfeso',Corinth:'Corinto',Nineveh:'Nínive',Babylon:'Babilônia',Philippi:'Filipos',Damascus:'Damasco',Bethlehem:'Belém',Rome:'Roma',Athens:'Atenas',Nazareth:'Nazaré',Jericho:'Jericó',Antioch:'Antioquia',Tarsus:'Tarso',Alexandria:'Alexandria',Egypt:'Egito',Tyre:'Tiro',Sidon:'Sidom'};
+function atlasLabel(place) { return modernPlaces[place.name]?.[0] || (!ENGLISH && portugueseAtlasNames[place.name]) || place.name; }
+
+let modernAtlas, modernAtlasRequest;
+function atlasCoordinateKey(p) {
+  return p.name+'|'+p.latitude.toFixed(5)+','+p.longitude.toFixed(5);
+}
+function atlasOptionKey(p,places) {
+  if(!places.some(other=>other!==p && other.name===p.name))return p.name;
+  return atlasCoordinateKey(p)+'|'+places.indexOf(p);
+}
+function loadModernAtlas() {
+  modernAtlasRequest ??= staticFile('media/modern-atlas.json').then(data=>modernAtlas=data).catch(()=>{
+    modernAtlasRequest=null;return null;
+  });
+  return modernAtlasRequest;
+}
+function countryLabel(code,lang=ENGLISH?'en':'pt'){
+  return new Intl.DisplayNames([lang],{type:'region'}).of(code);
+}
+function modernComparison(p, geo){
+  if(!geo)return '';
+  const country=countryLabel(geo.country || geo.cityCountry);
+  const distance=new Intl.NumberFormat(ENGLISH?'en':'pt-BR',{maximumFractionDigits:1}).format(geo.km);
+  return `<div class="atlas-comparison"><div><small>${studyLanguage(['Lugar bíblico','Biblical place'])}</small><strong>${esc(atlasLabel(p))}</strong></div>
+    <div><small>${studyLanguage(['Cidade atual de referência','Present-day reference city'])}</small><strong lang="en">${esc(geo.city)}</strong><span>≈ ${distance} km · ${studyLanguage(['em linha reta','straight-line distance'])}</span></div>
+    <div><small>${geo.country?studyLanguage(['País ou território do marcador','Country or territory at the marker']):studyLanguage(['País da cidade de referência','Country of the reference city'])}</small><strong>${esc(country)}</strong></div></div>`;
+}
 
 let modernRenderer;
 function loadModernMap() {
@@ -208,26 +235,29 @@ class PassagePortal extends HTMLElement {
   atlas(el) {
     const places = this.data.places || [];
     if (!places.length) { el.innerHTML="<h4>Places of the chapter</h4><p>This chapter does not have places with coordinates on the geographical basis.</p>"; return; }
-    const selected = places.find(p=>p.name===this.atlasPlace) || places.find(p=>p.name===wellStops[this.guide?.place]) || places[0];
-    this.atlasPlace = selected.name;
-    el.innerHTML = `<h4>${this.guide?"From Judea to Galilee":"Places of the "+esc(ref(this.reading))}</h4><div class="atlas-switch" role="group" aria-label="Map period"><button data-p="era" data-era="antigo">Biblical map</button><button data-p="era" data-era="hoje">Present-day map</button></div><label class="atlas-picker">Locate<select>${places.map(p=>`<option value="${esc(p.name)}">${esc(atlasLabel(p))}</option>`).join('')}</select></label><div class="portal-map" aria-label="Interactive Atlas"></div><div class="atlas-info" aria-live="polite"></div>`;
+    const selected = places.find(p=>atlasOptionKey(p,places)===this.atlasPlace) || places.find(p=>p.name===this.atlasPlace && p.verses?.includes(this.returnVerse)) || places.find(p=>p.name===this.atlasPlace) || places.find(p=>p.name===wellStops[this.guide?.place]) || places[0];
+    this.atlasPlace = atlasOptionKey(selected,places);
+    el.innerHTML = `<h4>${this.guide?"From Judea to Galilee":"Places of the "+esc(ref(this.reading))}</h4><div class="atlas-switch" role="group" aria-label="Map period"><button data-p="era" data-era="antigo">Biblical map</button><button data-p="era" data-era="hoje">Present-day map</button></div><label class="atlas-picker">Locate<select>${places.map(p=>`<option value="${esc(atlasOptionKey(p,places))}">${esc(atlasLabel(p))}${atlasOptionKey(p,places)!==p.name?' · v. '+esc(p.verses.join(', ')):''}</option>`).join('')}</select></label><div class="atlas-orientation" aria-live="polite"></div><div class="portal-map" aria-label="Interactive Atlas"></div><div class="atlas-info" aria-live="polite"></div>`;
     const select = el.querySelector('select');
     select.onchange = () => this.selectPlace(select.value,true);
     const node = el.querySelector('.portal-map');
-    if (typeof L === 'undefined') { node.textContent="Interactive map is not available."; this.selectPlace(selected.name); return; }
+    if(!modernAtlas)loadModernAtlas().then(data=>{
+      if(data && node.isConnected && this.querySelector('.portal-map')===node)this.selectPlace(this.atlasPlace);
+    });
+    if (typeof L === 'undefined') { node.textContent="Interactive map is not available."; this.selectPlace(this.atlasPlace); return; }
     const map = this.atlasMap = L.map(node,{scrollWheelZoom:false,maxZoom:17});
     this.markers = new Map();
     places.forEach(place=>{
       const marker = L.circleMarker([place.latitude,place.longitude],{radius:6,color:'#161616',weight:2,fillColor:'#e5b86e',fillOpacity:1}).addTo(map);
       marker.bindTooltip(esc(atlasLabel(place)),{direction:'top'});
-      marker.on('click',()=>this.selectPlace(place.name)); this.markers.set(place.name,marker);
+      const id=atlasOptionKey(place,places);marker.on('click',()=>this.selectPlace(id)); this.markers.set(id,marker);
     });
     const bounds = L.latLngBounds([...this.markers.values()].map(m=>m.getLatLng()));
     if(this.atlasView) map.setView(this.atlasView.center,this.atlasView.zoom);
     else if(places.length>1) map.fitBounds(bounds.pad(.18),{maxZoom:10});
     else map.setView(bounds.getCenter(),8);
     this.switchEra(this.atlasEra || 'antigo');
-    this.selectPlace(selected.name);
+    this.selectPlace(this.atlasPlace);
     this.mapResize = new ResizeObserver(()=>map.invalidateSize()); this.mapResize.observe(node);
   }
   switchEra(era) {
@@ -244,9 +274,10 @@ class PassagePortal extends HTMLElement {
         if(this.atlasMap!==map || this.base!==currentBase)return;
         this.modernVector=L.maplibreGL({style:new URL('./vendor/english-map/liberty-en.json',document.baseURI).href,attributionControl:{customAttribution:'<a href="https://openfreemap.org/">OpenFreeMap</a> · <a href="https://openmaptiles.org/">OpenMapTiles</a> · © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}}).addTo(map);
       }).catch(()=>{}); // Satellite imagery and English place markers remain usable without WebGL.
-      for(const [name,marker] of this.markers){
+      for(const [id,marker] of this.markers){
+        const name=this.data.places.find(p=>atlasOptionKey(p,this.data.places)===id).name;
         const show=historic && this.guide ? wellStops.includes(name) : this.markers.size<=6;
-        marker.unbindTooltip().bindTooltip(esc(historic ? modernPlaces[name]?.[0] || name : name),{permanent:show,direction:name==='Cana'?'left':'top'});
+        marker.unbindTooltip().bindTooltip(esc(historic ? atlasLabel({name}) : 'Biblical · '+name),{permanent:show,direction:name==='Cana'?'left':'top'});
       }
       if(historic && this.guide) this.overlay=L.imageOverlay('./scenes/john4-relief.webp',[[31.56,34.68],[33.06,35.82]],{attribution:'Terrain Tiles'}).addTo(map);
       const stops=(narrativeJourneys[key(this.reading)] || []).map(n=>this.markers.get(n)?.getLatLng()).filter(Boolean);
@@ -256,7 +287,7 @@ class PassagePortal extends HTMLElement {
     this.selectPlace(this.atlasPlace);
   }
   selectPlace(name, center=false) {
-    const p=this.data.places.find(item=>item.name===name); if(!p)return;
+    const p=this.data.places.find(item=>atlasOptionKey(item,this.data.places)===name); if(!p)return;
     this.atlasPlace=name;
     const select=this.querySelector('.atlas-picker select');select.value=name;
     const marker=this.markers?.get(name);
@@ -265,15 +296,25 @@ class PassagePortal extends HTMLElement {
       if(center)this.atlasMap.setView(marker.getLatLng(),Math.max(this.atlasMap.getZoom(),8));
       marker.bringToFront().openTooltip();
     }
-    const modern=modernPlaces[name], today=this.atlasEra==='hoje';
-    const well=this.guide && wellLocations[wellStops.indexOf(name)];
-    this.querySelector('.atlas-info').innerHTML=`<small>${today?"Current geography":"Geography of the narrative"} · v. ${esc(p.verses?.join(', '))}</small><h4>${esc(today && modern?modern[1]:atlasLabel(p))}</h4><p>${esc(today ? modern?.[2] || "The point brings the place mentioned. Use the names and routes of the current map to recognize the region." : well?.[3] || "Approximate location from the History Globe set.")}</p>${!today?"<small>I remember the current verse with biblical places. The paths link narrated stops and the old borders are not represented.</small>":''}<a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&amp;hl=en&amp;query=${p.latitude},${p.longitude}">Open in OpenStreetMap ↗</a>${this.profile?.dossier?.narratedEra ? `<details><summary>Time of the narrative</summary><p>${esc(this.profile.dossier.narratedEra)}</p></details>` : ''}${p.verses?.length ? `<button data-action="focus-verse" data-verse="${p.verses.includes(this.returnVerse)?this.returnVerse:p.verses[0]}">Read verse · ${p.verses.includes(this.returnVerse)?this.returnVerse:p.verses[0]}</button>` : ''}`;
+    const modern=modernPlaces[p.name], today=this.atlasEra==='hoje';
+    const geo=modernAtlas?.[atlasCoordinateKey(p)];
+    this.querySelector('.atlas-orientation').innerHTML=modernComparison(p,geo);
+    this.cityLayer?.remove();this.cityLayer=null;
+    if(today && geo && this.atlasMap){
+      this.cityLayer=L.layerGroup().addTo(this.atlasMap);
+      const cityPoint=[geo.lat,geo.lon];
+      L.polyline([[p.latitude,p.longitude],cityPoint],{color:'#194d71',weight:2,dashArray:'4 6',interactive:false}).addTo(this.cityLayer);
+      L.circleMarker(cityPoint,{radius:5,weight:2,color:'#fff',fillColor:'#175474',fillOpacity:1}).addTo(this.cityLayer)
+        .bindTooltip(esc(geo.city+' · '+countryLabel(geo.cityCountry,'en')),{permanent:true,direction:'bottom',className:'modern-city-label'});
+    }
+    const well=this.guide && wellLocations[wellStops.indexOf(p.name)];
+    this.querySelector('.atlas-info').innerHTML=`<small>${today?"Current geography":"Geography of the narrative"} · v. ${esc(p.verses?.join(', '))}</small><h4>${esc(today && modern?modern[1]:atlasLabel(p))}</h4><p>${esc(today ? modern?.[2] || "The point brings the place mentioned. Use the names and routes of the current map to recognize the region." : well?.[3] || "Approximate location from the History Globe set.")}</p>${!today?"<small>I remember the current verse with biblical places. The paths link narrated stops and the old borders are not represented.</small>":''}<a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&amp;hl=en&amp;query=${p.latitude},${p.longitude}">Open in OpenStreetMap ↗</a>${geo?`<div class="atlas-modern-tools">${today?`<button data-p="city-bounds">${studyLanguage(['Enquadrar os dois pontos','Show both points'])}</button>`:''}<a href="https://www.geonames.org/${esc(geo.id)}/" target="_blank" rel="noopener">GeoNames ↗</a></div>`:''}${this.profile?.dossier?.narratedEra ? `<details><summary>Time of the narrative</summary><p>${esc(this.profile.dossier.narratedEra)}</p></details>` : ''}${p.verses?.length ? `<button data-action="focus-verse" data-verse="${p.verses.includes(this.returnVerse)?this.returnVerse:p.verses[0]}">Read verse · ${p.verses.includes(this.returnVerse)?this.returnVerse:p.verses[0]}</button>` : ''}`;
   }
   disposeAtlas() {
     if(!this.atlasMap)return;
     this.atlasView={center:this.atlasMap.getCenter(),zoom:this.atlasMap.getZoom()};
     this.mapResize?.disconnect(); this.atlasMap.remove();
-    this.atlasMap=this.markers=this.base=this.overlay=this.route=this.modernVector=null;
+    this.atlasMap=this.markers=this.base=this.overlay=this.route=this.modernVector=this.cityLayer=null;
   }
   async compare(i, chosen) {
     const target = this.querySelector('.portal-pair'), link = chosen || this.links[i];
@@ -378,6 +419,12 @@ class PassagePortal extends HTMLElement {
     }
     if(action==='verse-place'){this.atlasPlace=b.dataset.place;this.returnVerse=Number(b.dataset.returnVerse);this.querySelector('[data-p="mapa"]').click();return;}
     if(action==='scene-location'){this.atlasPlace=this.scenePlace;this.querySelector('[data-p="mapa"]').click();return;}
+    if(action==='city-bounds'){
+      const p=this.data.places.find(place=>atlasOptionKey(place,this.data.places)===this.atlasPlace);
+      const geo=p && modernAtlas?.[atlasCoordinateKey(p)];
+      if(geo && this.atlasMap)this.atlasMap.fitBounds([[p.latitude,p.longitude],[geo.lat,geo.lon]],{padding:[40,45],maxZoom:13});
+      return;
+    }
     if (action === 'era') { this.switchEra(b.dataset.era);return; }
     if (action === 'word') {
       this.audio = new Audio('./media/hebrew/'+this.guide.word[4]+'.mp3');
