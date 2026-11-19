@@ -15,4 +15,10 @@
     script.async=false;script.src=(lang==='en'?'./en/':'./')+name+'.js?v=library-6';
     document.head.append(script);
   }
+  // The notes area is language-neutral code; it reads the page language itself.
+  for(const name of ['notes-core','notes']){
+    const script=document.createElement('script');
+    script.async=false;script.src='./'+name+'.js?v=notes-1';
+    document.head.append(script);
+  }
 })();

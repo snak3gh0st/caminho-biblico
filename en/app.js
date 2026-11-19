@@ -198,7 +198,7 @@ async function loadChapter() {
 function header() {
   return `<header class="site-header"><div class="header-inner">
     <button class="brand" data-action="home" aria-label="Poiema Bereanos · home"><img class="poiema-logo" src="./media/poiema-logo.jpeg" alt="" width="36" height="36"><span>Poiema Bereanos</span></button>
-    <nav aria-label="Main navigation"><button class="nav-link ${view === 'home' ? 'selected' : ''}" data-action="home">Bible</button><button class="nav-link" data-action="browse-plans">Plans</button>${view==='plan'?"<span class=\"nav-link selected current-study\" aria-current=\"page\">Reading</span>":''}</nav>
+    <nav aria-label="Main navigation"><button class="nav-link ${view === 'home' ? 'selected' : ''}" data-action="home">Bible</button><button class="nav-link" data-action="browse-plans">Plans</button><button class="nav-link" data-action="notes">Notes</button>${view==='plan'?"<span class=\"nav-link selected current-study\" aria-current=\"page\">Reading</span>":''}</nav>
     <select class="language-choice" aria-label="Language" id="language-choice"><option value="pt" ${ENGLISH?'':'selected'}>Português</option><option value="en" ${ENGLISH?'selected':''}>English</option></select>
   </div></header>`;
 }
@@ -418,7 +418,7 @@ function chapterStudyPanel(reading, data, profileData, section) {
     content = profile ? `<div class="library-columns"><div><span class="eyebrow">BOOK OVERVIEW · ${esc(book(reading.bookId)?.name.toUpperCase())}</span><p class="library-lead">${esc(profile.summary)}</p><h3>Structure of the book</h3><div class="book-structure">${profile.structure.map(part => `<div><span>CH. ${part.from}${part.to>part.from?`–${part.to}`:''}</span><strong>${esc(part.label)}</strong><p>${esc(part.description)}</p></div>`).join('')}</div><h3>Themes to accompany</h3><div class="book-themes">${profile.themes.map(theme => `<span>${esc(theme)}</span>`).join('')}</div></div><aside class="library-aside"><span class="eyebrow">SETTING AND READING</span><p>${esc(profile.setting)}</p><strong>While reading</strong><ul class="book-tips">${profile.readingKeys.map(tip => `<li>${esc(tip)}</li>`).join('')}</ul><strong>Open questions</strong><p>${esc(profile.cautions)}</p><a href="${esc(profileData.source.url)}" target="_blank" rel="noopener noreferrer">See the source of the panorama</a><a href="${esc(guideUrl || 'https://bibleproject.com/pt-br/')}" target="_blank" rel="noopener noreferrer">BibleProject visual guide</a></aside></div>` : `<p class="library-empty">The panorama of this book is being prepared. <a href="${esc(guideUrl || 'https://bibleproject.com/pt-br/')}" target="_blank" rel="noopener noreferrer">See the BibleProject guide</a></p>`;
   }
   if (section === 'estudiosos') content = `<div><span class="eyebrow">COMMENTARIES</span><p class="library-intro">Portuguese-produced entities produced with AI from extracts from sources. They are paraphrases, not citations of the authors. Check out the original note and the verse.</p><div class="scholar-grid">${s.scholarViews.map(view => { const source = data.sources.find(item => item.id === view.sourceId); return `<article class="scholar-card"><span>v. ${view.verse}</span><h3>${esc(source?.author || view.sourceId)}</h3><p>${esc(view.insight)}</p><a href="${esc(source?.url || '#')}" target="_blank" rel="noopener noreferrer">Check original commentary</a></article>`; }).join('')}</div><div class="library-limits"><strong>Limits of this analysis</strong><p>${esc(s.uncertainty)}</p></div></div>`;
-  if (section === 'pratica') content = `<div class="library-columns"><div><span class="eyebrow">QUESTIONS TO EXPLORE</span><ol class="library-questions">${s.questions.map(question => `<li>${esc(question)}</li>`).join('')}</ol></div><aside class="library-aside library-practice"><span class="eyebrow">APPLICATION</span><p>${esc(s.practice)}</p><button class="button button-dark" data-action="focus-notes">Write in my notes</button></aside></div>`;
+  if (section === 'pratica') content = `<div class="library-columns"><div><span class="eyebrow">QUESTIONS TO EXPLORE</span><ol class="library-questions">${s.questions.map(question => `<li>${esc(question)}</li>`).join('')}</ol></div><aside class="library-aside library-practice"><span class="eyebrow">APPLICATION</span><p>${esc(s.practice)}</p><button class="button button-dark" data-action="focus-notes">Write in my notes</button></aside></div>${window.PoiemaNotes?.chapterBlock?.(reading)||''}`;
   return content;
 }
 function connectionOverlay() {
@@ -689,6 +689,7 @@ document.addEventListener('click', async event => {
   const action = target.dataset.action;
 
   if (action === 'home') return showHome();
+  if (action === 'notes') return window.PoiemaNotes?.open();
   if (action === 'dismiss') { message = ''; return render(); }
   if(action==='choose-book'){
     const form=document.querySelector('#chapter-browser');
@@ -833,9 +834,9 @@ document.addEventListener('change', event => {
 async function init() {
   try {
     const [catalog,status,library,translations,guides,scenes] = await Promise.all([getJson('/api/books'),getJson('/api/status'),getJson('/api/studies'),getJson('/api/versions'),getJson('/api/book-guides'),staticFile(ENGLISH?'en/scenes.json':'scenes/manifest.json').catch(()=>({passages:{}}))]);
-    books = catalog.books;
+    books = catalog.books; window.poiemaBooks = books;
     if(!book(browseReading.bookId) || browseReading.chapter<1 || browseReading.chapter>book(browseReading.bookId).chapters)browseReading={bookId:1,chapter:1};
-     aiReady = status.aiReady; hosted = Boolean(status.hosted); prebuiltStudies = library.studies; versions = translations.versions; bookGuides = guides.guides; passageImages = scenes.passages || {}; bookImages = scenes.books || {};
+     aiReady = status.aiReady; window.poiemaAiReady = Boolean(aiReady); hosted = Boolean(status.hosted); prebuiltStudies = library.studies; versions = translations.versions; bookGuides = guides.guides; passageImages = scenes.passages || {}; bookImages = scenes.books || {};
     let resume;
     try {resume=JSON.parse(sessionStorage.getItem('poiema-return'));sessionStorage.removeItem('poiema-return');}catch{}
     const shared=location.hash.match(/^#study=(\d+)\.(\d+)\.(\d+)$/);

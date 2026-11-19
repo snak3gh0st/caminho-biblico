@@ -549,3 +549,56 @@ button[aria-pressed=true]:not(.verse-trigger),.atlas-switch button[aria-pressed=
 .scene-look span{flex:none;font-size:.68rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#d8d8d8;border:1px solid #ffffff59;border-radius:999px;padding:.12rem .5rem}
 .journey-caption .scene-look{margin:-8px 0 18px}
 @media(max-width:640px){.scene-look{font-size:.85rem;display:block}.scene-look span{display:inline-block;margin:0 .4rem .25rem 0}}
+
+/* Notes area: a full-screen panel over the page, black and white like the rest of the interface. */
+body.notes-open{overflow:hidden}
+.notes-panel{position:fixed;inset:0;z-index:80;background:#0b0b0b;color:#efefef;overflow:auto}
+.notes-panel[hidden]{display:none}
+.notes-shell{max-width:1400px;margin:auto;padding:20px 28px 40px;min-height:100%}
+.notes-head{display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid #333;padding-bottom:14px}
+.notes-head h2{font-size:30px;margin:0}
+.notes-head div{display:flex;gap:10px}
+.notes-head button,.notes-new,.notes-foot button,.notes-ai button{border:1px solid #444;background:#151515;color:#efefef;border-radius:8px;padding:9px 14px;font-weight:700;font-size:12px}
+.notes-head button[data-notes=close]{font-size:20px;line-height:1;padding:6px 13px}
+.notes-privacy{color:#bdbdbd;font-size:12px;line-height:1.6;margin:12px 0 18px;max-width:70ch}
+.notes-body{display:grid;grid-template-columns:200px minmax(0,1.2fr) minmax(0,1fr);gap:22px;align-items:start}
+.notes-list ul{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.notes-list li button{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;border:1px solid #2c2c2c;background:#121212;color:#efefef;border-radius:8px;padding:10px 12px}
+.notes-list li button[aria-current=true]{border-color:#9a9a9a;background:#1b1b1b}
+.notes-list small,.notes-organized small{color:#a8a8a8;font-size:11px}
+.notes-new{width:100%}
+.notes-editor label{display:flex;flex-direction:column;gap:6px;font-size:11px;font-weight:700;color:#cfcfcf;margin-bottom:14px}
+.notes-editor input,.notes-editor textarea{font-weight:400;background:#111;border:1px solid #3a3a3a;border-radius:8px;color:#efefef;padding:11px 13px;font-size:14px;line-height:1.65;width:100%}
+.notes-editor textarea{min-height:340px;resize:vertical;font-family:Georgia,'Times New Roman',serif;font-size:16px}
+.notes-foot{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.notes-foot small{color:#d9b36a;font-size:11px}
+.notes-organized{border:1px solid #2c2c2c;background:#101010;border-radius:12px;padding:6px 20px 18px}
+.notes-organized h3{font-family:var(--serif);font-size:19px;margin:20px 0 8px}
+.notes-organized h4{font-size:12px;margin:14px 0 4px;color:#cfcfcf}
+.notes-organized ul{margin:0;padding-left:18px;line-height:1.6;font-size:13px}
+.notes-organized li{margin-bottom:7px}
+.notes-organized a{color:#efefef;font-weight:700;text-underline-offset:3px}
+.notes-organized details{border-top:1px solid #262626;padding:9px 0}
+.notes-organized summary{cursor:pointer;font-size:13px}
+.notes-organized summary small{margin-left:6px}
+.notes-organized p{font-size:13px;line-height:1.65;margin:6px 0}
+.notes-why{display:block}
+.notes-hint{color:#b5b5b5;font-size:13px;line-height:1.7;margin:16px 0}
+.notes-ai{border-top:1px solid #333;margin-top:22px;padding-top:6px}
+.notes-ai button{margin:8px 10px 0 0}
+.notes-chapter{border:1px solid #333;background:#121212;border-radius:10px;padding:12px 16px;margin-top:18px}
+.notes-chapter h4{margin:0 0 6px;font-size:13px}
+.notes-chapter ul{margin:0;padding-left:18px;font-size:12px;line-height:1.7}
+.notes-chapter button{border:0;background:none;color:#efefef;font-weight:700;text-decoration:underline;text-underline-offset:3px;padding:0;font-size:12px}
+@media(max-width:1000px){.notes-body{grid-template-columns:180px minmax(0,1fr)}.notes-organized{grid-column:1/-1}}
+@media(max-width:640px){.notes-shell{padding:14px 16px 34px}.notes-body{display:block}.notes-list ul{flex-direction:row;overflow:auto;padding-bottom:6px}.notes-list li{min-width:140px}.notes-editor{margin-top:14px}.notes-organized{margin-top:18px}.notes-editor textarea{min-height:240px}}
+
+/* The header has three links now (Bíblia, Planos, Anotações): keep it on one line on narrow phones. */
+@media(max-width:520px){
+ .header-inner{gap:8px}
+ .site-header nav{gap:9px}
+ .brand{font-size:16px;gap:5px;letter-spacing:-.04em}
+ .brand .poiema-logo{width:26px;height:26px}
+ .nav-link{font-size:10.5px}
+ .language-choice{max-width:62px}
+}
