@@ -543,3 +543,9 @@ button[aria-pressed=true]:not(.verse-trigger),.atlas-switch button[aria-pressed=
 .atlas-compare input:focus-visible::-moz-range-thumb{outline:3px solid #fff;outline-offset:3px}
 .atlas-modern-tools{display:flex;align-items:center;flex-wrap:wrap;gap:.8rem;margin:.65rem 0}
 .portal-map .modern-city-label{font-weight:650;border-color:#175474;color:#102c41;background:#fff}
+
+/* The detail a reader should notice in a part's own scene. */
+.scene-look{display:flex;gap:.6rem;align-items:baseline;max-width:40rem;margin:-.2rem 0 .9rem;color:#f2f2f2;font-size:.95rem;line-height:1.45;text-shadow:0 1px 10px #000c}
+.scene-look span{flex:none;font-size:.68rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#d8d8d8;border:1px solid #ffffff59;border-radius:999px;padding:.12rem .5rem}
+.journey-caption .scene-look{margin:-8px 0 18px}
+@media(max-width:640px){.scene-look{font-size:.85rem;display:block}.scene-look span{display:inline-block;margin:0 .4rem .25rem 0}}

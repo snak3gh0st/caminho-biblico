@@ -12,6 +12,7 @@ let books = [];
 let prebuiltStudies = {};
 let bookGuides = {};
 let passageImages = {};
+let bookImages = {};
 let libraryData = null;
 let bookProfileData = null;
 let libraryTab = 'panorama';
@@ -328,11 +329,18 @@ function passageScene(reading, part) {
   const dedicated = passageImages[`${key(reading)}:${part.from}-${part.to}`];
   if (dedicated) return { id: `${key(reading)}:${part.from}-${part.to}`, ...dedicated, thematic: false };
   const text = normalName(`${part.title} ${part.explanation}`);
+  const book = bookImages[reading.bookId];
   let id;
+  // The English library stores the shared theme each part used before books had covers;
+  // only the narrative-specific ones still win over the book's own cover.
   if (key(reading) === '43:4') id = part.from >= 43 ? 'cana' : part.from >= 27 ? 'harvest' : 'well';
+  else if (['creation','resurrection','storm'].includes(part.sceneId)) id = part.sceneId;
   else if (reading.bookId === 1 && reading.chapter <= 2) id = 'creation';
-  else if (/ressurre|tumulo|sepulcro/.test(text)) id = 'resurrection';
-  else if (/tempestade|barco|naufrag/.test(text)) id = 'storm';
+  else if (reading.bookId >= 40 && reading.bookId <= 44 && /ressurre|tumulo|sepulcro/.test(text)) id = 'resurrection';
+  else if (reading.bookId >= 40 && reading.bookId <= 44 && /tempestade|barco|naufrag/.test(text)) id = 'storm';
+  // Each book has its own cover; the shared themes remain only as a fallback.
+  else if (book) return { id: `book-${reading.bookId}`, ...book, thematic: false, book: true };
+  else if (part.sceneId && Object.hasOwn(visualScenes,part.sceneId)) id = part.sceneId;
   else if (/exilio|babiloni|cativeiro/.test(text)) id = 'exile';
   else if (/deserto|sinai|horebe|exodo|mana/.test(text)) id = 'exodus';
   else if (/pastor|ovelha|rebanho/.test(text)) id = 'psalms';
@@ -342,7 +350,6 @@ function passageScene(reading, part) {
   else if (reading.bookId >= 40 && reading.bookId <= 43 && reading.chapter < 18) id = 'cana';
   else if (reading.bookId >= 2 && reading.bookId <= 5) id = 'exodus';
   else id = 'jerusalem';
-  id = part.sceneId && Object.hasOwn(visualScenes,part.sceneId) ? part.sceneId : id;
   const [file,title,alt] = visualScenes[id];
   return { id, file, title, alt, thematic: key(reading) !== '43:4' };
 }
@@ -379,7 +386,7 @@ function visualJourney(reading, data) {
   const index = Math.min(visualPart, parts.length - 1);
   const part = parts[index];
   const scene = passageScene(reading, part);
-  return `<section class="visual-journey" aria-label="Explorar as partes do capítulo"><div class="journey-stage ${sceneMotion?'motion-enabled':''}"><img class="journey-image" src="./scenes/${scene.file}" alt="${esc(scene.alt)}" width="1440" height="810" decoding="async"><div class="journey-caption"><span>${esc(ref(reading))} · v. ${part.from}–${part.to}</span><h3>${esc(part.title)}</h3><div class="journey-controls">${key(reading)==='43:4' ? narrationActive ? '<button data-action="stop-narration">Parar áudio</button>' : '<button data-action="narrate-part">Ouvir cena</button><button data-action="narrate-chapter">Ouvir todas as cenas</button>' : ''}<button data-action="scene-motion" aria-pressed="${sceneMotion}">${sceneMotion?'Pausar movimento':'Ativar movimento'}</button><button data-action="focus-verse" data-verse="${part.from}">Ler esta passagem ↓</button></div></div></div><p class="scene-disclosure">${scene.thematic?'Ambientação temática':'Cena interpretativa'} gerada por IA · ${esc(scene.title)} · Ilustração artística, sem precisão arqueológica.</p><div class="journey-parts" role="group" aria-label="Partes do capítulo">${parts.map((p,i)=>{const image=passageScene(reading,p);return `<button data-action="visual-part" data-index="${i}" aria-pressed="${index===i}"><img src="./scenes/${image.file}" alt="" loading="lazy" width="160" height="90"><span><small>v. ${p.from}–${p.to}</small><strong>${esc(p.title)}</strong></span></button>`;}).join('')}</div><div class="journey-explanation" aria-live="polite"><p>${esc(part.explanation)}</p></div></section>`;
+  return `<section class="visual-journey" aria-label="Explorar as partes do capítulo"><div class="journey-stage ${sceneMotion?'motion-enabled':''}"><img class="journey-image" src="./scenes/${scene.file}" alt="${esc(scene.alt)}" width="1440" height="810" decoding="async"><div class="journey-caption"><span>${esc(ref(reading))} · v. ${part.from}–${part.to}</span><h3>${esc(part.title)}</h3>${scene.look?`<p class="scene-look"><span>${studyLanguage(['Observe','Notice'])}</span>${esc(scene.look)}</p>`:''}<div class="journey-controls">${key(reading)==='43:4' ? narrationActive ? '<button data-action="stop-narration">Parar áudio</button>' : '<button data-action="narrate-part">Ouvir cena</button><button data-action="narrate-chapter">Ouvir todas as cenas</button>' : ''}<button data-action="scene-motion" aria-pressed="${sceneMotion}">${sceneMotion?'Pausar movimento':'Ativar movimento'}</button><button data-action="focus-verse" data-verse="${part.from}">Ler esta passagem ↓</button></div></div></div><p class="scene-disclosure">${scene.book?studyLanguage(['Arte do livro','Book art']):scene.thematic?'Ambientação temática':'Cena interpretativa'} gerada por IA · ${esc(scene.title)} · Ilustração artística, sem precisão arqueológica.</p><div class="journey-parts" role="group" aria-label="Partes do capítulo">${parts.map((p,i)=>{const image=passageScene(reading,p);return `<button data-action="visual-part" data-index="${i}" aria-pressed="${index===i}"><img src="./scenes/${image.file}" alt="" loading="lazy" width="160" height="90"><span><small>v. ${p.from}–${p.to}</small><strong>${esc(p.title)}</strong></span></button>`;}).join('')}</div><div class="journey-explanation" aria-live="polite"><p>${esc(part.explanation)}</p></div></section>`;
 }
 function connectionExplorer(reading, data, verseFilter = connectionVerse) {
   const verses = [...new Set(data.crossRefs.map(link=>link.fromVerse))].sort((a,b)=>a-b);
@@ -828,7 +835,7 @@ async function init() {
     const [catalog,status,library,translations,guides,scenes] = await Promise.all([getJson('/api/books'),getJson('/api/status'),getJson('/api/studies'),getJson('/api/versions'),getJson('/api/book-guides'),staticFile(ENGLISH?'en/scenes.json':'scenes/manifest.json').catch(()=>({passages:{}}))]);
     books = catalog.books;
     if(!book(browseReading.bookId) || browseReading.chapter<1 || browseReading.chapter>book(browseReading.bookId).chapters)browseReading={bookId:1,chapter:1};
-     aiReady = status.aiReady; hosted = Boolean(status.hosted); prebuiltStudies = library.studies; versions = translations.versions; bookGuides = guides.guides; passageImages = scenes.passages || {};
+     aiReady = status.aiReady; hosted = Boolean(status.hosted); prebuiltStudies = library.studies; versions = translations.versions; bookGuides = guides.guides; passageImages = scenes.passages || {}; bookImages = scenes.books || {};
     let resume;
     try {resume=JSON.parse(sessionStorage.getItem('poiema-return'));sessionStorage.removeItem('poiema-return');}catch{}
     const shared=location.hash.match(/^#study=(\d+)\.(\d+)\.(\d+)$/);
