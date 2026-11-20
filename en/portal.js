@@ -191,7 +191,7 @@ class PassagePortal extends HTMLElement {
     this.disposeAtlas();
     const scene = passageScene(this.reading, this.part);
     const expanded = this.hasAttribute('expanded');
-    const primary = [['cena',"Explore"],['mapa',"Maps"],['estudiosos',"Scholars"],['ecos',"Cross-references"]];
+    const primary = [['cena',"Explore"],['mapa',"Maps"],['quem',"Who and where"],['estudiosos',"Scholars"],['ecos',"Cross-references"]];
 
     const secondary = [['tempo',"History"],...(this.guide ? [['voz',"Keyword"]] : []),['panorama','Panorama'],['livro',"About the book"],['contexto',"Historical dossier"],['pratica',"Reflection"]];
     if (prebuiltStudies[key(this.reading)]) secondary.push(['editorial',"Editorial Guide"]);
@@ -203,7 +203,7 @@ class PassagePortal extends HTMLElement {
       <button class="portal-pin" data-p="inspect" aria-expanded="false"><i aria-hidden="true"></i>${esc(this.detail?.[0] || "To observe the excerpt")}</button>
       <div class="portal-caption"><small>${scene.book?studyLanguage(['Arte do livro','Book art']):scene.thematic?"Thematic environment":"Interpretative scene"} · AI</small><h3>${esc(this.guide?.title || this.part.title)}</h3>${scene.look?`<p class="scene-look"><span>${studyLanguage(['Observe','Notice'])}</span>${esc(scene.look)}</p>`:''}
       <div class="portal-pages"><button aria-label="Previous scene" data-p="prev" ${this.index?'':'disabled'}>←</button><span>Scene ${this.index+1} of ${this.parts.length}</span><button aria-label="Next Scene" data-p="next" ${this.index+1===this.parts.length?'disabled':''}>→</button></div><div class="portal-film" aria-label="Choose Scene">${this.parts.map((p,i)=>`<button data-p="frame" data-i="${i}" aria-label="Scene ${i+1}. ${esc(p.title)}" aria-pressed="${this.index===i}"><img alt="" loading="lazy" src="./scenes/${esc(passageScene(this.reading,p).file)}"><span>${p.from}–${p.to}</span></button>`).join('')}</div></div></div>
-      <div class="portal-study"><div class="portal-lead"></div><nav aria-label="Investigate the scene">${buttons(primary)}</nav><details class="portal-more" ${secondary.some(([id])=>id===this.topic)?'open':''}><summary>History, ${this.guide?studyLanguage(['palavra-chave','keyword']):studyLanguage(['livro','book'])} and more</summary><nav aria-label="Deepen the study">${buttons(secondary)}</nav></details><div class="portal-note" tabindex="-1"></div></div>`;
+      <div class="portal-study"><div class="portal-lead"></div><div class="practice-portal-entry"></div><nav aria-label="Investigate the scene">${buttons(primary)}</nav><details class="portal-more" ${secondary.some(([id])=>id===this.topic)?'open':''}><summary>History, ${this.guide?studyLanguage(['palavra-chave','keyword']):studyLanguage(['livro','book'])} and more</summary><nav aria-label="Deepen the study">${buttons(secondary)}</nav></details><div class="portal-note" tabindex="-1"></div></div>`;
     this.panel();
   }
   revealVerse(number, compare=false){
@@ -225,9 +225,11 @@ class PassagePortal extends HTMLElement {
     const lead=this.querySelector('.portal-lead');
     const active=this.data.discoveries?.find(entry=>entry.start===this.part.from);
     const verse=this.returnVerse || active?.verse || this.part.from;
+    const practice = window.PoiemaPractice?.start([this.reading.bookId,this.reading.chapter,verse],studyLanguage(['Estudar e aplicar este trecho','Study and apply this passage'])) || '';
+    this.querySelector('.practice-portal-entry').innerHTML = practice;
     lead.innerHTML=this.topic==='cena'?'':`<button data-p="return-text">← ${studyLanguage(['Voltar a','Back to'])} ${esc(ref(this.reading))}:${verse}</button>`;
     const full = ['estudiosos','panorama','livro','contexto','pratica','editorial','filme'].includes(this.topic);
-    this.classList.toggle('study-wide',full || ['mapa','ecos'].includes(this.topic));
+    this.classList.toggle('study-wide',full || ['mapa','ecos','quem'].includes(this.topic));
     el.classList.toggle('study-paper',full);
     if(full){
       el.innerHTML = this.topic==='editorial' ? studyRoom(this.reading,this.editorialTab || 'panorama',this.movement || 0) : chapterStudyPanel(this.reading,this.data,this.profile,this.topic);
@@ -243,6 +245,13 @@ class PassagePortal extends HTMLElement {
     }
     if (this.topic === 'mapa') {
       this.atlas(el);
+      return;
+    }
+    if (this.topic === 'quem') {
+      // People, places and events of this passage from the knowledge graph (public/graph.js), loaded on demand.
+      el.innerHTML = "<small>Who, where and when</small><h4>People, places and events</h4><p class=\"gx-hint\">Loading…</p>";
+      const topic = this.topic, node = el;
+      window.PoiemaGraph?.passageHTML(this.reading.bookId, this.reading.chapter, p.from, p.to).then(html => { if (this.isConnected && this.topic === topic) node.innerHTML = "<small>Who, where and when</small><h4>People, places and events</h4>" + html; }).catch(() => { node.innerHTML = "<p class=\"gx-hint\">Could not load the connections.</p>"; });
       return;
     }
     if (this.topic === 'ecos') {
@@ -280,7 +289,13 @@ class PassagePortal extends HTMLElement {
   }
   atlas(el) {
     const places = this.data.places || [];
-    if (!places.length) { el.innerHTML="<h4>Places of the chapter</h4><p>This chapter does not have places with coordinates on the geographical basis.</p>"; return; }
+    if (!places.length) {
+      el.innerHTML="<h4>Places of the chapter</h4><p>This chapter does not have places with coordinates on the geographical basis.</p>";
+      // The atlas still knows the places of the whole book.
+      const reading=this.reading;
+      window.PoiemaGraph?.bookPlacesHTML(reading.bookId).then(html=>{ if(el.isConnected && this.reading===reading) el.insertAdjacentHTML('beforeend',html); }).catch(()=>{});
+      return;
+    }
     const selected = places.find(p=>atlasOptionKey(p,places)===this.atlasPlace) || places.find(p=>p.name===this.atlasPlace && p.verses?.includes(this.returnVerse)) || places.find(p=>p.name===this.atlasPlace) || places.find(p=>p.name===wellStops[this.guide?.place]) || places[0];
     this.atlasPlace = atlasOptionKey(selected,places);
     el.innerHTML = `<h4>${this.guide?"From Judea to Galilee":"Places of the "+esc(ref(this.reading))}</h4><div class="atlas-switch" role="group" aria-label="Map period"><button data-p="era" data-era="antigo">${studyLanguage(["Biblical map",'Biblical'])}</button><button data-p="era" data-era="comparar">${studyLanguage(['Antes e hoje','Then & now'])}</button><button data-p="era" data-era="hoje">${studyLanguage(["Present-day map",'Today'])}</button></div><label class="atlas-picker">Locate<select>${places.map(p=>`<option value="${esc(atlasOptionKey(p,places))}">${esc(atlasLabel(p))}${atlasOptionKey(p,places)!==p.name?' · v. '+esc(p.verses.join(', ')):''}</option>`).join('')}</select></label><div class="atlas-orientation" aria-live="polite"></div><div class="portal-map" aria-label="Interactive Atlas"></div><div class="atlas-info" aria-live="polite"></div>`;
@@ -517,7 +532,7 @@ class PassagePortal extends HTMLElement {
 }
 customElements.define('passage-portal', PassagePortal);
 
-async function enterLibraryPortal(trigger, initialReading, restore=null) {
+async function enterLibraryPortal(trigger, initialReading, restore=null, onClose=null) {
   const dialog=document.createElement('dialog');
   dialog.className='portal-dialog library-dialog';
   const toolbar=document.createElement('form');
@@ -576,7 +591,9 @@ async function enterLibraryPortal(trigger, initialReading, restore=null) {
   dialog.addEventListener('cancel',clearSharedReference);
   dialog.addEventListener('close',()=>{revision++;dialog.remove();document.body.classList.remove('portal-open');
     clearSharedReference();
-    trigger.focus({preventScroll:true});},{once:true});
+    window.PoiemaGuide?.refreshResume();
+    if (onClose && dialog.returnValue!=='navigation') onClose();
+    else trigger?.focus({preventScroll:true});},{once:true});
   document.body.append(dialog);document.body.classList.add('portal-open');dialog.showModal();
   await load(initialReading);
 }

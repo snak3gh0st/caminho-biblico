@@ -22,6 +22,7 @@ let versions = {};
 let aiReady = false;
 let hosted = false;
 let view = 'home';
+let exploreSection = 'discoveries';
 let activePlanId = null;
 let activeDay = 0;
 let activeReading = 0;
@@ -52,7 +53,19 @@ function plan() { return state.plans.find(item => item.id === activePlanId); }
 function totalReadings(item) { return item.days.reduce((sum, day) => sum + day.readings.length, 0); }
 function completed(item) { return item.days.reduce((sum, day) => sum + day.readings.filter(reading => item.done.includes(key(reading))).length, 0); }
 function percentage(item) { return Math.round((completed(item) / totalReadings(item)) * 100) || 0; }
-function nextDay(item) { const index = item.days.findIndex(day => day.readings.some(reading => !item.done.includes(key(reading)))); return index < 0 ? 0 : index; }
+function nextDay(item) {
+  const index = item.days.findIndex(day => day.readings.some(reading => !item.done.includes(key(reading))));
+  return index < 0 ? item.days.length-1 : index;
+}
+function nextReading(item,day) {
+  const readings = item.days[day].readings;
+  const index = readings.findIndex(reading => !item.done.includes(key(reading)));
+  return index < 0 ? readings.length-1 : index;
+}
+function currentPlan() {
+  const inProgress = state.plans.filter(item => completed(item)<totalReadings(item));
+  return inProgress.find(item => item.id===state.recentPlanId) || inProgress[0];
+}
 function notify(text) { message = text; render(); }
 
 const discoveryBooks=new Map();
@@ -144,12 +157,19 @@ function switchLanguage(lang, portal=null){
   try {sessionStorage.setItem('poiema-return',JSON.stringify({planId:view==='plan'?activePlanId:null,day:activeDay,reading:activeReading,portal}));}catch{}
   const url=new URL(location.href);url.searchParams.set('lang',lang);location.assign(url);
 }
-function openPlan(id, dayIndex) {
+function openPlan(id, dayIndex, updateURL=true) {
   activePlanId = id;
   const item = plan();
   if (!item) return showHome();
-  activeDay = Math.min(Math.max(0, dayIndex), item.days.length - 1);
-  activeReading = 0;
+  activeDay = Math.min(Math.max(0,dayIndex),item.days.length-1);
+  activeReading = nextReading(item,activeDay);
+  if (updateURL) {
+    const url = pageURL('plans');
+    url.searchParams.set('plan',item.id);
+    pushPage(url);
+    state.recentPlanId = item.id;
+    try { save(); } catch {}
+  }
   answer = '';
   studyTab = 'panorama'; selectedMovement = 0;
   libraryTab = 'panorama'; connection = null;
@@ -158,7 +178,7 @@ function openPlan(id, dayIndex) {
   loadChapter();
   window.scrollTo(0, 0);
 }
-function showHome() { stopLocalNarration(); requestToken++; view = 'home'; activePlanId = null; chapterData = null; comparisonData = null; libraryData = null; bookProfileData = null; connection = null; busy = ''; message = ''; render(); window.scrollTo(0, 0); }
+function showHome(next = 'home') { stopLocalNarration(); requestToken++; view = next; activePlanId = null; chapterData = null; comparisonData = null; libraryData = null; bookProfileData = null; connection = null; busy = ''; message = ''; render(); window.scrollTo(0, 0); }
 function scrollToReader() {
   requestAnimationFrame(() => {
     const top = $('.reader-panel')?.getBoundingClientRect().top + window.scrollY - 88;
@@ -195,10 +215,43 @@ async function loadChapter() {
   if (token === requestToken) { busy = ''; render(); }
 }
 
+const pageActions = {home:'home',bible:'bible','browse-plans':'plans',explore:'explore'};
+
+function pageURL(page,section) {
+  const url = new URL(location.pathname,location.origin);
+  url.searchParams.set('lang',ENGLISH?'en':'pt');
+  if (page!=='home') url.searchParams.set('area',page);
+  if (page==='explore' && section && section!=='discoveries') url.searchParams.set('section',section);
+  return url;
+}
+
+function locationPage() {
+  const query = new URLSearchParams(location.search);
+  const sections = window.PoiemaGuide.topics;
+  const hash = location.hash.slice(1);
+  const area = query.get('area') || (sections.includes(hash) ? 'explore' : 'home');
+  const section = query.get('section') || hash;
+  return {
+    page:['home','bible','explore','plans'].includes(area) ? area : 'home',
+    section:sections.includes(section) ? section : 'discoveries',
+    planId:area==='plans' ? query.get('plan') : null,
+  };
+}
+
+function pushPage(url) {
+  if (url.href!==location.href) window.history.pushState(null,'',url);
+}
+
 function header() {
+  const destinations = [['home','Início','Home'],['bible',"Bible",'Bible'],['explore',"Explore",'Explore'],['browse-plans',"Plans",'Plans']];
   return `<header class="site-header"><div class="header-inner">
-    <button class="brand" data-action="home" aria-label="Poiema Bereanos · home"><img class="poiema-logo" src="./media/poiema-logo.jpeg" alt="" width="36" height="36"><span>Poiema Bereanos</span></button>
-    <nav aria-label="Main navigation"><button class="nav-link ${view === 'home' ? 'selected' : ''}" data-action="home">Bible</button><button class="nav-link" data-action="browse-plans">Plans</button><button class="nav-link" data-action="notes">Notes</button>${view==='plan'?"<span class=\"nav-link selected current-study\" aria-current=\"page\">Reading</span>":''}</nav>
+    <button class="brand" data-action="home" aria-label="${studyLanguage(["Poiema Bereanos · home",'Poiema Bereanos · home'])}"><img class="poiema-logo" src="./media/poiema-logo.jpeg" alt="" width="36" height="36"><span>Poiema Bereanos</span></button>
+    <nav aria-label="${studyLanguage(["Main navigation",'Main navigation'])}">${destinations.map(([action,pt,en])=>{
+      const page = pageActions[action];
+      const current = view===page || page==='plans' && view==='plan';
+      return `<a class="nav-link ${current?'selected':''}" href="${esc(pageURL(page).href)}" data-action="${action}" ${current?'aria-current="page"':''}>${studyLanguage([pt,en])}</a>`;
+    }).join('')}<button class="nav-link" data-action="notes">${studyLanguage(['Caderno','Notebook'])}</button></nav>
+    <button class="guide-search-launch" data-action="search">${studyLanguage(['Buscar','Search'])}</button>
     <select class="language-choice" aria-label="Language" id="language-choice"><option value="pt" ${ENGLISH?'':'selected'}>Português</option><option value="en" ${ENGLISH?'selected':''}>English</option></select>
   </div></header>`;
 }
@@ -208,13 +261,6 @@ try {
   const stored=JSON.parse(localStorage.getItem('poiema-library'));
   if(stored && Number.isInteger(stored.bookId) && Number.isInteger(stored.chapter))browseReading=stored;
 } catch {}
-function foldBookName(text){return text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase().replace(/\s+/g,' ');}
-function findChapter(query){
-  const parts=foldBookName(query).match(/^(.+?)\s+(\d+)$/);if(!parts)return null;
-  const selected=books.find(b=>foldBookName(b.name)===parts[1]);
-  const chapter=Number(parts[2]);
-  return selected && chapter>=1 && chapter<=selected.chapters ? {bookId:selected.id,chapter}:null;
-}
 function chapterOptions(reading) {
   return Array.from({length:book(reading.bookId)?.chapters || 1},(_,i)=>`<option value="${i+1}" ${i+1===reading.chapter?'selected':''}>${i+1}</option>`).join('');
 }
@@ -233,26 +279,37 @@ function refreshBrowseCover() {
   document.querySelector('.catalog-caption strong').textContent=ref(browseReading);
 }
 
+function resumePlanCard(item) {
+  if (!item) return '';
+  const day = nextDay(item), reading = item.days[day].readings[nextReading(item,day)];
+  return `<section class="guide-active-plan">
+    <div><small>${studyLanguage(['Plano em andamento','Plan in progress'])} · ${day+1}/${item.days.length}</small><h2>${esc(planCopy(item).title)}</h2>
+    <p>${studyLanguage(['Próxima leitura','Next reading'])} · ${esc(ref(reading))}</p></div>
+    <div class="guide-active-progress"><progress max="${totalReadings(item)}" value="${completed(item)}" aria-label="${studyLanguage(['Progresso do plano','Plan progress'])}"></progress>
+    <button class="guide-passage" data-action="open-plan" data-id="${esc(item.id)}">${studyLanguage(['Retomar plano','Resume plan'])} →</button></div></section>`;
+}
+
 function home() {
-  const current = state.plans[0];
-  const covers = {aprofundar:'passage-1-1-1-5.webp',jesus:'passage-43-1-1-5.webp',marcos:'passage-41-1-1-8.webp',salmos:'passage-19-23-1-2.webp'};
-  return `<main class="home-wrap">
-    <section class="hero bible-library" id="biblia"><div class="hero-copy">
-      <h1>Explore the Bible</h1>
-      <p>Choose a passage to explore its scenes, places and connections.</p>
-      <form id="chapter-browser"><label>Book<select name="bookId">${['old','new'].map(t=>`<optgroup label="${t==='old'?"Old Testament":"New Testament"}">${books.filter(b=>b.testament===t).map(b=>`<option value="${b.id}" ${b.id===browseReading.bookId?'selected':''}>${esc(b.name)}</option>`).join('')}</optgroup>`).join('')}</select></label><label>Chapter<select name="chapter">${chapterOptions(browseReading)}</select></label><button class="button button-dark" type="submit">Explore chapter <span aria-hidden="true">↗</span></button></form>
-    </div><button type="submit" form="chapter-browser" class="hero-art hero-raster portal-door"><img id="browse-cover" src="./scenes/${esc(browseCover().file)}" alt="${esc(browseCover().alt)}" width="1280" height="720" fetchpriority="high"><span class="catalog-caption"><small>Artist’s interpretation · AI</small><strong>${esc(ref(browseReading))}</strong><span class="portal-door-arrow" aria-hidden="true">↗</span></span></button></section>
-    <div id="verse-notebook">${notebookView()}</div><details class="book-index"><summary>Browse all 66 books</summary><form id="reference-search"><label>Find a book or chapter<input type="search" id="book-search" autocomplete="off" placeholder="e.g. Romans 8"></label><button class="ref-jump" hidden></button></form>${['old','new'].map(t=>`<section data-testament><h2>${t==='old'?"Old Testament":"New Testament"}</h2><div>${books.filter(b=>b.testament===t).map(b=>`<button data-action="choose-book" data-id="${b.id}">${esc(b.name)}</button>`).join('')}</div></section>`).join('')}<p class="book-empty" hidden>No books found.</p></details>
-    ${current ? `<section class="continue-card"><div><span class="resume-label">Your current plan</span><h2>${esc(planCopy(current).title)}</h2><p>${completed(current)} of ${totalReadings(current)} chapters read</p><div class="progress-track"><span style="width:${percentage(current)}%"></span></div></div><button class="button button-light" data-action="open-plan" data-id="${esc(current.id)}">Resume reading <span aria-hidden="true">→</span></button></section>` : ''}
-    ${state.plans.length > 1 ? `<section class="section my-plans"><div class="section-heading"><div><h2>Other plans saved</h2></div></div><div class="plan-list">${state.plans.slice(1).map(item => `<button class="plan-row" data-action="open-plan" data-id="${esc(item.id)}"><span class="plan-row-icon">✦</span><span class="plan-row-main"><strong>${esc(planCopy(item).title)}</strong><small>${item.days.length} days · ${completed(item)} of ${totalReadings(item)} Chapters</small></span><span class="plan-row-progress">${percentage(item)}%</span><span aria-hidden="true">→</span></button>`).join('')}</div></section>` : ''}
-    <section class="section" id="planos"><div class="section-heading"><div><h2>Reading plans</h2></div><a class="text-link" href="#criar">Build a plan →</a></div>
-      <div class="reading-plans">${starterPlans.map(item => `<button class="reading-plan" data-action="start-starter" data-key="${item.key}"><img src="./scenes/${covers[item.key]}" alt="" width="112" height="84" loading="lazy"><span><small>${item.refs.length} days</small><strong>${esc(item.title)}</strong><span>${esc(item.description)}</span></span><b aria-hidden="true">↗</b></button>`).join('')}</div>
+  const current = currentPlan();
+  const covers = {aprofundar:'passage-1-1-1-5.webp',jesus:'passage-43-1-1-5.webp',marcos:'passage-41-1-1-8.webp',salmos:'passage-19-23-1-2.webp',historia:'creation.jpg'};
+  return `<main class="home-wrap guide-home">
+    ${view === 'home' ? window.PoiemaGuide.start(resumePlanCard(current)) : ''}
+    ${view === 'bible' ? `<section class="guide-library-header" id="biblia"><div><h1>${studyLanguage(["Bible",'Bible'])}</h1>${window.PoiemaGuide.quickSearch()}
+      <form id="chapter-browser"><label>Book<select name="bookId">${['old','new'].map(t=>`<optgroup label="${t==='old'?"Old Testament":"New Testament"}">${books.filter(b=>b.testament===t).map(b=>`<option value="${b.id}" ${b.id===browseReading.bookId?'selected':''}>${esc(b.name)}</option>`).join('')}</optgroup>`).join('')}</select></label><label>Chapter<select name="chapter">${chapterOptions(browseReading)}</select></label><button class="guide-passage" type="submit">${studyLanguage(['Ler o capítulo','Read the chapter'])} ↗</button></form></div>
+      <button type="submit" form="chapter-browser" class="guide-library-cover"><img id="browse-cover" src="./scenes/${esc(browseCover().file)}" alt="${esc(browseCover().alt)}" width="1280" height="720"><span class="catalog-caption"><small>${studyLanguage(['Ilustração gerada por IA','AI-generated illustration'])}</small><strong>${esc(ref(browseReading))}</strong></span></button></section>
+      ${window.PoiemaGuide.bibleIndex()}` : ''}
+    ${view === 'plans' ? `<section class="guide-plans guide-plan-home" id="planos">
+      <div class="section-heading"><h1>${studyLanguage(["Reading plans",'Reading plans'])}</h1><a class="guide-passage" href="#criar">Build a plan →</a></div>
+      ${resumePlanCard(current)}
+      ${state.plans.some(item=>item!==current) ? `<section class="guide-saved-plans"><h2>${studyLanguage(['Seus planos','Your plans'])}</h2><div class="plan-list">${state.plans.filter(item=>item!==current).map(item => `<button class="plan-row" data-action="open-plan" data-id="${esc(item.id)}"><span class="plan-row-main"><strong>${esc(planCopy(item).title)}</strong><small>${completed(item)} / ${totalReadings(item)} ${studyLanguage(["Chapters",'chapters'])}</small></span><span class="plan-row-progress">${percentage(item)}%</span><span aria-hidden="true">→</span></button>`).join('')}</div></section>` : ''}
+      <h2>${studyLanguage(['Escolha um plano','Choose a plan'])}</h2>
+      <div class="reading-plans">${starterPlans.map(item => `<button class="reading-plan" data-action="start-starter" data-key="${item.key}"><img src="./scenes/${covers[item.key]}" alt="" width="112" height="84" loading="lazy"><span><small>${item.refs.length} ${studyLanguage(['dias','days'])}</small><strong>${esc(item.title)}</strong><span>${esc(item.description)}</span></span><b aria-hidden="true">↗</b></button>`).join('')}</div>
     </section>
 
     <section class="section creation" id="criar"><div class="section-heading"><div><h2>Build a reading plan</h2></div></div>
       <div class="creation-grid"><form id="book-plan" class="creation-card"><label for="book-select">Book of the Bible</label><select id="book-select" name="bookId">${books.map(item => `<option value="${item.id}" ${item.id===43?'selected':''}>${esc(item.name)} · ${item.chapters} ch.</option>`).join('')}</select><label for="pace-select">Pace</label><select id="pace-select" name="pace"><option value="1">1 chapter per day</option><option value="2">2 chapters per day</option><option value="3">3 chapters per day</option></select><button class="button button-dark full" type="submit">Create a plan <span aria-hidden="true">→</span></button></form>
       ${aiReady ? `<form id="ai-plan" class="creation-card"><div class="creation-icon">✳</div><h3>A theme, with the help of AI</h3><p>Ask for a short trail on the subject you want to study.</p><label for="theme-input">What do you want to understand better?</label><input id="theme-input" name="theme" placeholder="Ex.g. faith in difficult times" maxlength="160" value="${esc(draftTheme)}" required><label for="days-select">Duration</label><select id="days-select" name="days"><option value="5">5 days</option><option value="7" selected>7 days</option><option value="10">10 days</option><option value="14">14 days</option></select><button class="button button-outline full" type="submit" ${busy==='plan'||!aiReady?'disabled':''}>${busy==='plan'?"Preparing a plan...":"Create with AI"} <span aria-hidden="true">✦</span></button><small class="form-note">${aiReady?"AI chooses one chapter per day. You can review the sequence.":hosted?"New generations are deactivated. The prepared library is still available.":"New generations are deactivated. The prepared library is still available."}</small></form>` : ''}</div>
-    </section>
+    </section>` : ''}
   </main>`;
 }
 
@@ -515,11 +572,6 @@ function discoveryURL(reading,verse){
   url.hash='study='+[reading.bookId,reading.chapter,verse].join('.');
   return url;
 }
-function notebookView(){
-  const entries=Object.values(notebookEntries()).filter(e=>book(e.bookId)).sort((a,b)=>b.updated-a.updated);
-  if(!entries.length)return '';
-  return `<details class="notebook-list"><summary>${studyLanguage(['Meu caderno','My notebook'])} · ${entries.length}</summary>${entries.map(e=>`<article><a href="${esc(discoveryURL(e,e.verse).href)}" data-notebook-open="${[e.bookId,e.chapter,e.verse].join('.')}">${esc(ref(e))}:${e.verse} ↗</a>${e.note?`<p>${esc(e.note)}</p>`:''}</article>`).join('')}</details>`;
-}
 function discoveryTools(reading,verse){
   const id=[reading.bookId,reading.chapter,verse].join('.');
   const entry=notebookEntries()[id];
@@ -532,12 +584,12 @@ document.addEventListener('submit',event=>{
   const tools=form.closest('[data-verse-key]'), id=tools.dataset.verseKey;
   const [bookId,chapter,verse]=id.split('.').map(Number);
   const entries=notebookEntries();
-  entries[id]={bookId,chapter,verse,note:form.querySelector('textarea').value.trim(),updated:Date.now()};
+  entries[id]={...entries[id],bookId,chapter,verse,note:form.querySelector('textarea').value.trim(),updated:Date.now()};
   try{
     localStorage.setItem(notebookKey,JSON.stringify(entries));
+    window.PoiemaGuide?.savePosition(bookId,chapter,verse);
     tools.querySelector('summary').textContent=studyLanguage(['Minha anotação','My note']);
     tools.querySelector('[role=status]').textContent=studyLanguage(['Descoberta salva.','Discovery saved.']);
-    const home=document.querySelector('#verse-notebook');if(home)home.innerHTML=notebookView();
   }catch{tools.querySelector('[role=status]').textContent=studyLanguage(['O navegador não conseguiu salvar.','Your browser could not save this note.']);}
 });
 document.addEventListener('click',async event=>{
@@ -599,8 +651,10 @@ document.addEventListener('click', event => {
   const data = button.closest('passage-portal')?.data || libraryData;
   if (!data) return;
   const portal=button.closest('passage-portal');
+  const verse = Number(button.dataset.studyVerse);
+  window.PoiemaGuide?.savePosition(data.bookId,data.chapter,verse);
   if(portal){
-    portal.returnVerse=Number(button.dataset.studyVerse);
+    portal.returnVerse=verse;
     if(portal.closest('.library-dialog'))history.replaceState(history.state,'',discoveryURL(data,portal.returnVerse));
   }
   const lines=portal ? portal.translation?.verses : chapterData?.verses;
@@ -641,16 +695,23 @@ function planView() {
   const study = item.studies[currentKey];
   const guide = prebuiltStudies[currentKey];
   const isDone = item.done.includes(currentKey);
+  const isComplete = completed(item)===totalReadings(item);
   return `<main class="workspace-wrap"><button class="back-link" data-action="browse-plans"><span aria-hidden="true">←</span> All plans</button>
-    <section class="workspace-head"><div><span class="eyebrow">YOUR READING PLAN · ${item.days.length} DAYS</span><h1>${esc(copy.title)}</h1><p>${esc(copy.description)}</p></div><div class="head-progress"><strong>${percentage(item)}<span>%</span></strong><span>of the plan completed</span><div class="progress-track"><span style="width:${percentage(item)}%"></span></div></div></section>
+    <section class="workspace-head"><div><span class="eyebrow">${studyLanguage(["Day",'Day'])} ${activeDay+1} / ${item.days.length}</span><h1>${esc(copy.title)}</h1><p>${esc(copy.description)}</p></div><div class="head-progress"><strong>${percentage(item)}<span>%</span></strong><span>of the plan completed</span><div class="progress-track"><span style="width:${percentage(item)}%"></span></div></div></section>
     <div class="workspace-grid"><aside class="days-panel" aria-label="Plan days"><div class="panel-heading"><span>Plan days</span><strong>${completed(item)} / ${totalReadings(item)}</strong></div><label class="day-picker">Reading day<select id="day-picker">${item.days.map((entry,i)=>`<option value="${i}" ${i===activeDay?'selected':''}>Day ${i+1} · ${esc(entry.readings.map(ref).join(' + '))}</option>`).join('')}</select></label><div class="day-list">${item.days.map((entry,index) => { const done = entry.readings.every(r => item.done.includes(key(r))); return `<button class="day-item ${index===activeDay?'active':''}" data-action="open-day" data-index="${index}"><span class="day-icon">${done?'✓':String(index+1).padStart(2,'0')}</span><span><strong>Day ${index+1}</strong><small>${esc(entry.readings.map(ref).join(' + '))}</small></span><span class="day-chevron">›</span></button>`; }).join('')}</div></aside>
-    <section class="reader-panel" aria-label="Biblical reading"><div class="reader-top"><div><span class="eyebrow">DAY ${String(activeDay+1).padStart(2,'0')} · READING</span><h2>${esc(ref(reading))}</h2><p>${esc(copy.focus || "Read, watch and reflect.")}</p></div><button class="bookmark-button ${isDone?'bookmarked':''}" data-action="toggle-done" title="${isDone?"Mark as unread":"Mark as read"}" aria-label="${isDone?"Mark as unread":"Mark as read"}">${isDone?'✓':'○'}</button></div>
+    <section class="reader-panel" aria-label="Biblical reading"><div class="reader-top"><div><span class="eyebrow">DAY ${String(activeDay+1).padStart(2,'0')} · READING</span><h2>${esc(ref(reading))}</h2><p>${esc(copy.focus || "Read, watch and reflect.")}</p><p class="guide-plan-prompt">${esc(copy.prompts?.[activeDay] || readingPrompt(reading.bookId))}</p></div><button class="bookmark-button ${isDone?'bookmarked':''}" data-action="toggle-done" title="${isDone?"Mark as unread":"Mark as read"}" aria-label="${isDone?"Mark as unread":"Mark as read"}">${isDone?'✓':'○'}</button></div>
+      <button class="guide-passage" data-guide-read="${reading.bookId}.${reading.chapter}">${studyLanguage(['Abrir leitura contínua','Open continuous reading'])} ↗</button>
+      ${window.PoiemaPractice?.start([reading.bookId,reading.chapter,1],studyLanguage(['Estudar e aplicar','Study and apply'])) || ''}
       ${libraryData ? `<button class="reader-study-shortcut" data-action="open-library">Explore ${esc(ref(reading))} in the portal <span aria-hidden="true">↗</span></button>` : guide ? `<button class="reader-study-shortcut" data-action="open-deep-study">Open the chapter study <span>Explore s s</span></button>` : ''}
       ${day.readings.length > 1 ? `<div class="chapter-tabs" role="group" aria-label="Chapters of this day">${day.readings.map((r,index) => `<button class="chapter-tab ${index===activeReading?'active':''}" data-action="open-reading" data-index="${index}">${esc(ref(r))}</button>`).join('')}</div>` : ''}
       <div class="translation-tools"><label>Translation <select id="version-select" aria-label="Bible Translation">${Object.entries(versions).map(([id,name]) => `<option value="${id}" ${selectedVersion===id?'selected':''}>${esc(name)}</option>`).join('')}</select></label><label class="compare-toggle"><input id="compare-toggle" type="checkbox" ${compareEnabled?'checked':''}> Compare</label>${compareEnabled ? `<select id="compare-select" aria-label="Translation to compare">${Object.entries(versions).filter(([id]) => id!==selectedVersion).map(([id,name]) => `<option value="${id}" ${compareVersion===id?'selected':''}>${esc(name)}</option>`).join('')}</select>` : ''}</div>
       <div class="reader-rule"></div>${libraryData && chapterData ? "<p class=\"verse-hint\">Select a verse to explore its study notes.</p>" : ''}<div class="scripture ${comparisonData?'scripture-compare':''}">${busy==='chapter'?"<p class=\"muted\">Loading the chapter...</p>":chapterData ? `${comparisonData ? `<div class="compare-head"><strong>${esc(chapterData.versionName)}</strong><strong>${esc(comparisonData.versionName)}</strong></div>` : ''}${chapterData.verses.map((verse,index) => `<div class="verse-row ${comparisonData?'paired':''}" id="v${index+1}">${interactiveVerse(index+1,verse,libraryData)}${comparisonData ? `<p class="verse"><sup>${index+1}</sup>${esc(comparisonData.verses[index] || '')}</p>` : ''}</div>`).join('')}` : "<p class=\"muted\">It was not possible to load the text. <button class=\"inline-button\" data-action=\"retry-chapter\">Try again</button></p>"}</div>
       ${chapterData ? `<div class="translation-credit"><strong>${esc(chapterData.versionName)}</strong><br>${esc(chapterData.copyright)}<br><a href="${esc(chapterData.sourceUrl)}" target="_blank" rel="noopener noreferrer">See source of the chapter</a>${comparisonData ? `<br><br><strong>${esc(comparisonData.versionName)}</strong><br>${esc(comparisonData.copyright)}<br><a href="${esc(comparisonData.sourceUrl)}" target="_blank" rel="noopener noreferrer">See source of comparison</a>` : ''}</div><div class="translation-more">Want to consult <em>The Message</em>? <a href="https://www.editoravida.com.br/a-mensagem-capa-luxo-laranja-e-verde.html" target="_blank" rel="noopener noreferrer">Get to know the official edition</a> <small>Work with reserved rights; the full text is not reproduced here.</small></div>` : ''}
-      <div class="reading-actions"><button class="button ${isDone?'button-outline':'button-dark'}" data-action="toggle-done">${isDone?"✓ Reading complete":"Mark as read"} <span aria-hidden="true">${isDone?'':'→'}</span></button><button class="text-link" data-action="next-day">Next day <span aria-hidden="true">→</span></button></div>
+      <div class="reading-actions">
+        ${isComplete ? `<strong>${studyLanguage(['Plano concluído','Plan complete'])}</strong><button class="guide-passage" data-action="browse-plans">${studyLanguage(['Ver outros planos','Browse other plans'])} →</button>` :
+          `<button class="guide-passage" data-action="finish-reading">${isDone ? studyLanguage(['Próxima leitura','Next reading']) : studyLanguage(['Concluir e continuar','Finish and continue'])} →</button>`}
+        <button class="text-link" data-action="toggle-done">${isDone?studyLanguage(['Desmarcar leitura','Unmark reading']):studyLanguage(["Mark as read",'Mark as read'])}</button>
+      </div>
     </section>
     <aside class="study-panel" aria-label="Reading journal">
       ${study ? studyHtml(study, item.studies[currentKey+'-sources']) : !aiReady ? '' : `<div class="study-empty"><span>✦</span><h3>Additional analysis with AI</h3><p>Ask for a reading about the structure, scenery, theology and application of this chapter.</p><button class="button button-dark full" data-action="generate-study" ${busy==='study'||!chapterData||!aiReady?'disabled':''}>${busy==='study'?"Preparing a study...":"Generate analysis with AI"} <span aria-hidden="true">↗</span></button>${!aiReady?"<small>Set the AI key in the .env file to generate the analysis.</small>":''}</div>`}
@@ -678,8 +739,15 @@ function studyHtml(study, sources) {
 
 function footer() { return `<footer class="site-footer"><span><img class="poiema-footer-logo" src="./media/poiema-logo.jpeg" alt="" width="22" height="22"> Poiema Bereanos</span><span>Translations open with credits along with the text <a href="./en/sources.html">Sources and licenses</a></span></footer>`; }
 function render() {
+  window.PoiemaDiscoveries?.detachHistory();
   document.body.classList.toggle('comparison-open', Boolean(connection));
-  $('#app').innerHTML = header() + (message ? `<div class="notice" role="alert">${esc(message)} <button data-action="dismiss" aria-label="Close Warning">×</button></div>` : '') + (view === 'plan' ? planView() : home()) + footer() + connectionOverlay();
+  $('#app').innerHTML = header() + (message ? `<div class="notice" role="alert">${esc(message)} <button data-action="dismiss" aria-label="Close Warning">×</button></div>` : '') + (view === 'plan' ? planView() : view === 'explore' ? window.PoiemaGuide.explore(exploreSection) : home()) + footer() + connectionOverlay();
+  if (view === 'explore') {
+    window.PoiemaDiscoveries?.attachHistory();
+    const links = document.querySelector('.guide-section-nav');
+    const active = links?.querySelector('[aria-current="page"]');
+    if (active && active.offsetLeft+active.offsetWidth>links.clientWidth) links.scrollLeft=active.offsetLeft;
+  }
   if (connection) document.querySelector('.connection-close')?.focus({preventScroll:true});
 }
 
@@ -688,25 +756,33 @@ document.addEventListener('click', async event => {
   if (!target) return;
   const action = target.dataset.action;
 
-  if (action === 'home') return showHome();
-  if (action === 'notes') return window.PoiemaNotes?.open();
-  if (action === 'dismiss') { message = ''; return render(); }
-  if(action==='choose-book'){
-    const form=document.querySelector('#chapter-browser');
-    rememberReading({bookId:Number(target.dataset.id),chapter:1});form.elements.bookId.value=browseReading.bookId;
-    form.elements.chapter.innerHTML=chapterOptions(browseReading);refreshBrowseCover();
-    document.querySelector('.book-index').open=false;form.elements.chapter.focus();return;
+  if (Object.hasOwn(pageActions,action)) {
+    if (target.matches('a[href]') && (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)) return;
+    event.preventDefault();
+    const page = pageActions[action];
+    exploreSection = target.dataset.section || 'discoveries';
+    pushPage(pageURL(page,exploreSection));
+    showHome(page);
+    const heading = page==='explore' && target.dataset.section
+      ? document.querySelector('.guide-explore .guide-section h2') : document.querySelector('main h1');
+    if (heading) { heading.tabIndex=-1; heading.focus({preventScroll:true}); }
+    return;
   }
-  if (action === 'browse-plans') { if(view!=='home')showHome(); document.querySelector('#planos')?.scrollIntoView({block:'start'});return; }
+  if (action === 'search') return window.PoiemaGuide.search();
+  if (action === 'notes') return window.PoiemaNotes?.open();
+  if (action === 'atlas') return window.PoiemaGraph?.open();
+  if (action === 'dismiss') { message = ''; return render(); }
   if (action === 'go-plan') { const item = plan() || state.plans[0]; return item ? openPlan(item.id, nextDay(item)) : showHome(); }
   if (action === 'open-plan') { const item = state.plans.find(p => p.id===target.dataset.id); return item && openPlan(item.id, nextDay(item)); }
   if (action === 'start-starter') {
     const template = starterPlans.find(item => item.key === target.dataset.key);
     if (!template) return;
-    const days = template.refs.map(([bookId,chapter],index) => ({ focus: template.focuses[index] || `Chapter ${chapter}`, readings: [{bookId,chapter}] }));
+    const saved = state.plans.find(item => item.origin === 'curated' && item.days.length === template.refs.length && template.refs.every(([id,n],i) => item.days[i].readings[0]?.bookId === id && item.days[i].readings[0]?.chapter === n));
+    if (saved) return openPlan(saved.id, nextDay(saved));
+    const days = template.refs.map(([bookId,chapter],index) => ({ focus: template.focuses[index] || `Chapter ${chapter}`, readings: [{bookId,chapter}, ...(template.additional?.[index] || [])] }));
     return newPlan(template.title, template.description, days, 'curated');
   }
-  if (action === 'open-day') { activeDay = Number(target.dataset.index); activeReading = 0; answer = ''; draftQuestion = ''; studyTab = 'panorama'; libraryTab = 'panorama'; selectedMovement = 0; loadChapter(); return scrollToReader(); }
+  if (action === 'open-day') { activeDay = Number(target.dataset.index); activeReading = nextReading(plan(),activeDay); answer = ''; draftQuestion = ''; studyTab = 'panorama'; libraryTab = 'panorama'; selectedMovement = 0; loadChapter(); return scrollToReader(); }
   if (action === 'open-reading') { activeReading = Number(target.dataset.index); answer = ''; draftQuestion = ''; studyTab = 'panorama'; libraryTab = 'panorama'; selectedMovement = 0; loadChapter(); return scrollToReader(); }
   if (action === 'open-deep-study') return $('#estudo-completo')?.scrollIntoView({ behavior:'auto', block:'start' });
   if (action === 'narrate-part') return narratePassage(visualPart);
@@ -740,7 +816,21 @@ document.addEventListener('click', async event => {
   if (action === 'focus-verse') return $(`#v${Number(target.dataset.verse)}`)?.scrollIntoView({ behavior:'smooth', block:'center' });
   if (action === 'focus-notes') { $('#notes')?.scrollIntoView({ behavior:'smooth', block:'center' }); return $('#notes')?.focus(); }
   if (action === 'retry-chapter') return loadChapter();
-  if (action === 'next-day') { const item = plan(); if (activeDay < item.days.length - 1) { activeDay++; activeReading = 0; answer = ''; draftQuestion = ''; studyTab = 'panorama'; libraryTab = 'panorama'; selectedMovement = 0; loadChapter(); scrollToReader(); } return; }
+  if (action === 'finish-reading') {
+    const item = plan();
+    const reading = item.days[activeDay].readings[activeReading];
+    if (!item.done.includes(key(reading))) {
+      item.done.push(key(reading));
+      save();
+    }
+    if (completed(item)===totalReadings(item)) return render();
+    const day = item.days[activeDay].readings.some(entry=>!item.done.includes(key(entry))) ? activeDay : nextDay(item);
+    activeDay=day;
+    activeReading=nextReading(item,day);
+    answer=''; draftQuestion=''; studyTab='panorama'; libraryTab='panorama'; selectedMovement=0;
+    loadChapter();
+    return scrollToReader();
+  }
   if (action === 'toggle-done') {
     const item = plan(); const reading = item.days[activeDay].readings[activeReading]; const value = key(reading);
     item.done = item.done.includes(value) ? item.done.filter(x => x !== value) : [...item.done, value];
@@ -756,15 +846,9 @@ document.addEventListener('click', async event => {
 });
 
 document.addEventListener('submit', async event => {
-  if(event.target.id==='reference-search'){
-    event.preventDefault();const found=findChapter(document.querySelector('#book-search').value);
-    if(found)return enterLibraryPortal(document.querySelector('#book-search'),found);
-    const matches=document.querySelectorAll('.book-index [data-action="choose-book"]:not([hidden])');
-    if(matches.length===1)matches[0].click();return;
-  }
   if(event.target.id==='chapter-browser'){
     event.preventDefault();
-    return enterLibraryPortal(event.submitter || event.target.querySelector('button'), browseReading);
+    return window.PoiemaReader.open(browseReading,event.submitter || event.target.querySelector('button'));
   }
   const form = event.target;
   if (!['book-plan','ai-plan','question-form'].includes(form.id)) return;
@@ -800,15 +884,6 @@ document.addEventListener('submit', async event => {
 });
 
 document.addEventListener('input', event => {
-  if(event.target.id==='book-search'){
-    const term=foldBookName(event.target.value),found=findChapter(term);
-    const index=event.target.closest('.book-index');
-    const jump=index.querySelector('.ref-jump');jump.hidden=!found;
-    if(found)jump.textContent=`Open ${ref(found)} →`;
-    index.querySelectorAll('[data-action="choose-book"]').forEach(b=>{b.hidden=!!found || !foldBookName(b.textContent).includes(term);});
-    index.querySelectorAll('[data-testament]').forEach(s=>{s.hidden=!s.querySelector('button:not([hidden])');});
-    index.querySelector('.book-empty').hidden=!!found || !!index.querySelector('[data-action="choose-book"]:not([hidden])');return;
-  }
   if (event.target.id === 'theme-input') { draftTheme = event.target.value; return; }
   if (event.target.name === 'question') { draftQuestion = event.target.value; return; }
   if (event.target.id !== 'notes') return;
@@ -835,8 +910,13 @@ async function init() {
   try {
     const [catalog,status,library,translations,guides,scenes] = await Promise.all([getJson('/api/books'),getJson('/api/status'),getJson('/api/studies'),getJson('/api/versions'),getJson('/api/book-guides'),staticFile(ENGLISH?'en/scenes.json':'scenes/manifest.json').catch(()=>({passages:{}}))]);
     books = catalog.books; window.poiemaBooks = books;
+    starterPlans.push(window.PoiemaGuide.historyPlan());
     if(!book(browseReading.bookId) || browseReading.chapter<1 || browseReading.chapter>book(browseReading.bookId).chapters)browseReading={bookId:1,chapter:1};
      aiReady = status.aiReady; window.poiemaAiReady = Boolean(aiReady); hosted = Boolean(status.hosted); prebuiltStudies = library.studies; versions = translations.versions; bookGuides = guides.guides; passageImages = scenes.passages || {}; bookImages = scenes.books || {};
+    window.addEventListener('popstate',handlePageLocation);
+    const locationRoute = locationPage();
+    view = locationRoute.page;
+    exploreSection = locationRoute.section;
     let resume;
     try {resume=JSON.parse(sessionStorage.getItem('poiema-return'));sessionStorage.removeItem('poiema-return');}catch{}
     const shared=location.hash.match(/^#study=(\d+)\.(\d+)\.(\d+)$/);
@@ -844,19 +924,38 @@ async function init() {
       const [bookId,chapter,verse]=shared.slice(1).map(Number);
       if(book(bookId) && chapter>0 && chapter<=book(bookId).chapters && verse>0){
         render();await customElements.whenDefined('passage-portal');
-        await enterLibraryPortal(document.querySelector('#chapter-browser button'),{bookId,chapter},{verse});return;
+        await enterLibraryPortal(document.querySelector('.brand'),{bookId,chapter},{verse});return;
       }
     }
     if(resume?.planId && state.plans.some(item=>item.id===resume.planId)){
-      openPlan(resume.planId,resume.day);if(resume.reading && plan().days[activeDay].readings[resume.reading]){activeReading=resume.reading;loadChapter();}return;
+      openPlan(resume.planId,resume.day,false);if(resume.reading && plan().days[activeDay].readings[resume.reading]){activeReading=resume.reading;loadChapter();}return;
     }
+    const routePlan = state.plans.find(item=>item.id===locationRoute.planId);
+    if (routePlan) return openPlan(routePlan.id,nextDay(routePlan),false);
     render();
+    window.PoiemaDiscoveries?.openFromURL();
+    window.PoiemaReader?.openFromURL();
     if(resume?.portal && book(resume.portal.bookId)){
-      await enterLibraryPortal(document.querySelector('#chapter-browser button'),{bookId:resume.portal.bookId,chapter:resume.portal.chapter},resume.portal);
+      await enterLibraryPortal(document.querySelector('.brand'),{bookId:resume.portal.bookId,chapter:resume.portal.chapter},resume.portal);
     }
   } catch(error) { $('#app').innerHTML = `<p class="loading">${esc(error.message)} Please reload the page.</p>`; }
 }
 
+
+function handlePageLocation() {
+  if (!books.length) return;
+  const route = locationPage();
+  if (!route.planId && view===route.page && (view!=='explore' || route.section===exploreSection)) return;
+  window.PoiemaNotes?.close(false);
+  window.PoiemaGraph?.close(false);
+  for (const dialog of document.querySelectorAll('dialog[open]')) dialog.close('navigation');
+  exploreSection=route.section;
+  const item=state.plans.find(item=>item.id===route.planId);
+  if (item) openPlan(item.id,nextDay(item),false);
+  else showHome(route.page);
+  window.PoiemaDiscoveries?.openFromURL();
+  window.PoiemaReader?.openFromURL();
+}
 
 document.addEventListener('keydown', event => {
   if (!connection) return;
