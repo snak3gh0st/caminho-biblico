@@ -27,6 +27,13 @@
       return practice?[{...note,practice}]:[];
     });
   }
+  function recallEntries() {
+    return (panel?.open?notes:readNotebook()).flatMap(note=>{
+      const recall=window.PoiemaWorkshop?.normalizeRecall(note.recall);
+      return recall?[{...note,recall}]:[];
+    });
+  }
+
   function persist() {
     try { localStorage.setItem(KEY, JSON.stringify({ notes })); status = ''; } catch { status = t('O navegador não conseguiu salvar. Baixe a anotação para não perdê-la.', 'Your browser could not save. Download the note so you do not lose it.'); }
   }
@@ -109,6 +116,7 @@
       <p class="notes-privacy">${t('Suas anotações ficam só neste navegador. A organização abaixo acontece no seu aparelho e não envia nada para ninguém.', 'Your notes stay in this browser only. The organizing below happens on your device and sends nothing to anyone.')}</p>
       <p class="notes-backup-status" role="status" data-notes-backup-status></p>
       <div data-notes-practice-queue>${practice?.notebookQueue(studyEntries()) || ''}</div>
+      <div data-notes-recall-queue>${window.PoiemaWorkshop?.notebookQueue(recallEntries()) || ''}</div>
       <div class="notes-body">
         <aside class="notes-list" aria-label="${t('Suas anotações', 'Your notes')}"><button type="button" class="notes-new" data-notes="new">+ ${t('Nova anotação', 'New note')}</button><label class="notes-search">${t('Buscar no caderno','Search notebook')}<input type="search" data-notes-search value="${esc(filter)}"></label><ul>${listHTML()}</ul><details class="notes-bookmarks" ${passages ? 'open' : ''}><summary>${t('Passagens guardadas','Saved passages')}</summary><ul>${passages}</ul></details></aside>
         <section class="notes-editor"><div data-notes-practice-detail>${selectedStudy ? practice.notebookDetail({...note,practice:selectedStudy}) : ''}</div>${note ? `<label>${t('Título (opcional)', 'Title (optional)')}<input type="text" maxlength="120" value="${esc(note.title)}" data-notes-field="title"></label><label>${t('Anotação', 'Note')}<textarea maxlength="20000" rows="16" data-notes-field="text" placeholder="${t('Escreva livremente. Cite passagens como João 3:16 ou Sl 23, faça perguntas, anote o que quer praticar.', 'Write freely. Cite passages like John 3:16 or Ps 23, ask questions, note what you want to practise.')}">${esc(note.text)}</textarea></label><div class="notes-foot"><small role="status">${esc(status)}</small><button type="button" data-notes="delete">${t('Apagar', 'Delete')}</button></div>` : `<p class="notes-hint">${t('Crie uma anotação para começar.', 'Create a note to start.')}</p>`}</section>
@@ -246,6 +254,11 @@
         const practice=entry.practice===undefined ? null : window.PoiemaPractice?.normalizeRecord(entry.practice);
         if (entry.practice!==undefined && !practice) throw new Error();
         const note={id:entry.id,title:entry.title,text:entry.text,created:timestamp(entry.created),updated};
+        if (entry.recall!==undefined) {
+          const recall=window.PoiemaWorkshop?.normalizeRecall(entry.recall);
+          if (!recall) throw new Error();
+          note.recall=recall;
+        }
         if (practice) {
           note.practice=practice;
           note.cites=[practice.reference.slice(0,2).join(':')];
@@ -305,17 +318,29 @@
     if (target) { event.preventDefault(); open(target.dataset.notesOpen); }
   });
 
-  function saveDiscovery({title,text,cites,id}) {
-    load();
-    const existing = notes.find(note => note.id === id);
-    if (!existing && notes.length >= 200) throw new Error('Notebook full');
-    const now = Date.now();
-    const note = {id:existing?.id || crypto.randomUUID(),title,text,cites,created:existing?.created || now,updated:now};
-    const next = [note,...notes.filter(entry => entry !== existing)];
+  function saveNotebookEntry(note,existing) {
+    const next=[note,...notes.filter(entry=>entry!==existing)];
     localStorage.setItem(KEY,JSON.stringify({notes:next}));
-    notes = next;
-    if (panel?.open) refreshOrganized();
+    notes=next;
+    if (panel?.open) {
+      panel.querySelector('[data-notes-practice-queue]').innerHTML=window.PoiemaPractice?.notebookQueue(studyEntries()) || '';
+      panel.querySelector('[data-notes-recall-queue]').innerHTML=window.PoiemaWorkshop?.notebookQueue(recallEntries()) || '';
+      if (note.id===activeId && note.practice) panel.querySelector('[data-notes-practice-detail]').innerHTML=window.PoiemaPractice.notebookDetail(note);
+      refreshOrganized();
+    }
+    window.PoiemaWorkshop?.refreshHome();
     return note.id;
+  }
+
+  function saveDiscovery({title,text,cites,id,recallReference}) {
+    if (!panel?.open) load();
+    const existing=notes.find(note=>note.id===id);
+    if (!existing && notes.length>=200) throw new Error('Notebook full');
+    const now=Date.now();
+    const note={...existing,id:existing?.id || crypto.randomUUID(),title,text,cites,created:existing?.created || now,updated:now};
+    const recall=note.recall || (recallReference && window.PoiemaWorkshop?.schedule(recallReference));
+    if (recall) note.recall=recall;
+    return saveNotebookEntry(note,existing);
   }
 
   function saveStudy({id,title,text,practice,previous}) {
@@ -331,16 +356,18 @@
       practice:record,cites:[...new Set([...(existing?.cites || []),record.reference.slice(0,2).join(':')])],
       created:existing?.created || now,updated:now,
     };
-    const next=[note,...notes.filter(item=>item!==existing)];
-    localStorage.setItem(KEY,JSON.stringify({notes:next}));
-    notes=next;
-    if (panel?.open) {
-      panel.querySelector('[data-notes-practice-queue]').innerHTML=window.PoiemaPractice.notebookQueue(studyEntries());
-      if (note.id===activeId) panel.querySelector('[data-notes-practice-detail]').innerHTML=window.PoiemaPractice.notebookDetail(note);
-      refreshOrganized();
-    }
-    return note.id;
+    const recall=note.recall || window.PoiemaWorkshop?.schedule(record.reference);
+    if (recall) note.recall=recall;
+    return saveNotebookEntry(note,existing);
   }
 
-  window.PoiemaNotes = {open,close,chapterBlock,saveDiscovery,saveStudy,studyEntries};
+  function saveRecall(id,record,previous) {
+    const recall=window.PoiemaWorkshop?.normalizeRecall(record);
+    if (!panel?.open) load();
+    const existing=notes.find(note=>note.id===id);
+    if (!recall || !existing || JSON.stringify(existing.recall)!==JSON.stringify(previous)) throw new Error('Review changed');
+    return saveNotebookEntry({...existing,recall,updated:Date.now()},existing);
+  }
+
+  window.PoiemaNotes = {open,close,chapterBlock,saveDiscovery,saveStudy,studyEntries,recallEntries,saveRecall};
 })();

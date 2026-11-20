@@ -321,7 +321,7 @@
     await navigator.serviceWorker.register('./reader-offline.js');
     await navigator.serviceWorker.ready;
     const cache = await caches.open('poiema-reading-v1');
-    const shell = ['index.html','styles.css','language.js','app.js','portal.js','guide-content.js','practice-guides.js','study-practice.js','discovery-content.js','discoveries.js','study-guide.js','guide-reader.js','notes-core.js','notes.js','graph.js','vendor/leaflet/leaflet.js','vendor/leaflet/leaflet.css','en/app.js','en/portal.js','en/books.json','en/studies.json'];
+    const shell = ['index.html','styles.css','language.js','app.js','portal.js','guide-content.js','practice-guides.js','study-practice.js','discovery-content.js','study-workshop.js','discoveries.js','study-guide.js','guide-reader.js','notes-core.js','notes.js','graph.js','vendor/leaflet/leaflet.js','vendor/leaflet/leaflet.css','en/app.js','en/portal.js','en/books.json','en/studies.json'];
     const startup = STATIC_MODE ? ['books.json','studies.json','versions.json','book-guides.json'] : ['api/books','api/studies','api/status','api/versions','api/book-guides'];
     const editionFolder = t('media/portal-text','en/bible/web');
     await cache.addAll([...shell,...startup,`${editionFolder}/${bookId}.json`].map(path => new URL('./'+path,location.href)));

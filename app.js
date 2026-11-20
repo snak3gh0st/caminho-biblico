@@ -935,6 +935,7 @@ async function init() {
     render();
     window.PoiemaDiscoveries?.openFromURL();
     window.PoiemaReader?.openFromURL();
+    window.PoiemaWorkshop?.openFromURL();
     if(resume?.portal && book(resume.portal.bookId)){
       await enterLibraryPortal(document.querySelector('.brand'),{bookId:resume.portal.bookId,chapter:resume.portal.chapter},resume.portal);
     }
@@ -955,6 +956,7 @@ function handlePageLocation() {
   else showHome(route.page);
   window.PoiemaDiscoveries?.openFromURL();
   window.PoiemaReader?.openFromURL();
+  window.PoiemaWorkshop?.openFromURL();
 }
 
 document.addEventListener('keydown', event => {

@@ -31,7 +31,7 @@
     const reviews = Array.isArray(input.reviews) ? input.reviews.slice(-12).filter(item =>
       item && reviewStates.includes(item.outcome) && validDate(item.date) && typeof item.note==='string' && item.note.length<=1500)
       .map(({outcome,date,note})=>({outcome,date,note})) : [];
-    return {reference:input.reference.slice(),action:input.action.trim(),reviewOn:input.reviewOn,done:input.done===true,reviews};
+    return {reference:input.reference.slice(),action:input.action.trim(),reviewOn:input.reviewOn,done:input.done===true,reviews,...(input.track==='escutar'?{track:'escutar'}:{})};
   }
 
   const label = ([id,chapter,from,to]) => `${ref({bookId:id,chapter})}:${from}${to!==from?'–'+to:''}`;
@@ -63,6 +63,8 @@
   function refreshHome() {
     const card = document.querySelector('#guide-practice-resume');
     if (card) card.innerHTML = homeCard();
+    window.PoiemaDiscoveries?.refreshListening();
+    window.PoiemaWorkshop?.refreshHome();
   }
 
   function notebookQueue(entries) {
@@ -136,7 +138,7 @@
       <form method="dialog"><button aria-label="${closeLabel()}">×</button></form></header>`;
   }
 
-  async function open(requested) {
+  async function open(requested,track) {
     const [id,chapter,from=1,to=from] = requested;
     const range=[id,chapter,from,to];
     if (!validReference(range)) return;
@@ -147,9 +149,9 @@
     if (!dialog.open) dialog.showModal();
     const data=await getResource(`/api/library/${id}/${chapter}`).catch(()=>null);
     if (!dialog.open || request!==revision) return;
-    const guide=makeGuide(range,data), key=guide.range.join('.');
+    const guide=makeGuide(range,data), key=guide.range.join('.')+(track?'|'+track:'');
     if (!drafts.has(key)) drafts.set(key,{observation:'',meaning:'',action:'',date:dateStamp(3)});
-    active={guide,data,draft:drafts.get(key),step:0,saved:null};
+    active={guide,data,draft:drafts.get(key),step:track?2:0,saved:null,track};
     drawStudy();
     dialog.querySelector('#practice-title').focus({preventScroll:true});
   }
@@ -206,6 +208,7 @@
             <div>${readLink(guide.range,t('Abrir no leitor','Open in reader'))}</div></details>
         </div></div>
       <footer class="practice-footer">
+        ${window.PoiemaWorkshop?.groupLink(guide.id?'study:'+guide.id:'ref:'+guide.range.join('.')) || ''}
         ${step>0&&!saved?`<button type="button" class="guide-passage" data-practice-step="${step-1}">← ${t('Voltar etapa','Previous step')}</button>`:''}
         ${saved?`<button type="button" class="guide-passage practice-next" data-practice-close>${t('Fechar','Close')}</button>`:
           step===2?`<button type="submit" class="guide-passage practice-next" form="practice-apply">${t('Guardar aplicação','Save application')}</button>`:
@@ -232,14 +235,14 @@
     }
     try {
       draft.noteId=window.PoiemaNotes.saveDiscovery({id:draft.noteId,title:copy(guide.title),
-        text:studyText(guide,draft),cites:[guide.range.slice(0,2).join(':')]});
+        text:studyText(guide,draft),cites:[guide.range.slice(0,2).join(':')],recallReference:guide.range});
       status.textContent=t('Reflexão guardada no Caderno.','Reflection saved to your Notebook.');
     } catch { status.textContent=t('O Caderno não conseguiu guardar a reflexão.','The Notebook could not save the reflection.'); }
   }
 
   function saveApplication(form) {
     const {guide,draft,saved}=active, status=form.querySelector('[data-practice-status]');
-    const practice=normalizeRecord({reference:guide.range,action:draft.action,reviewOn:draft.date,done:false,reviews:[]});
+    const practice=normalizeRecord({reference:guide.range,action:draft.action,reviewOn:draft.date,done:false,reviews:[],track:active.track});
     if (!practice || draft.date<dateStamp()) {
       status.textContent=t('Escreva uma ação e escolha uma data de hoje em diante.','Write an action and choose a date from today onward.');
       return;
@@ -315,7 +318,7 @@
     const button=event.target.closest('button');
     if (!button) return;
     const data=button.dataset;
-    if (data.practiceOpen) return open(data.practiceOpen.split('.').map(Number));
+    if (data.practiceOpen) return open(data.practiceOpen.split('.').map(Number),data.practiceTrack==='escutar'?'escutar':null);
     if (data.practiceReview) return openReview(data.practiceReview);
     if (!dialog?.contains(button)) return;
     if (Object.hasOwn(data,'practiceClose')) return dialog.close();
@@ -342,5 +345,5 @@
     }
   });
 
-  window.PoiemaPractice={library,start,homeCard,refreshHome,notebookQueue,notebookDetail,normalizeRecord};
+  window.PoiemaPractice={library,start,homeCard,refreshHome,notebookQueue,notebookDetail,normalizeRecord,validReference,calendar:{dateStamp,validDate,prettyDate}};
 })();

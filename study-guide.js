@@ -82,6 +82,7 @@
         <span class="guide-feature-credit">${t('Ilustração gerada por IA','AI-generated illustration')}</span></article>
     </section>
     ${activePlan}
+    <section class="guide-active-plan guide-active-journey" id="guide-recall-resume">${window.PoiemaWorkshop?.homeCard() || ''}</section>
     <section class="guide-active-plan guide-active-journey" id="guide-practice-resume">${window.PoiemaPractice?.homeCard() || ''}</section>
     <section class="guide-active-plan guide-active-journey" id="guide-resume-journey">${window.PoiemaDiscoveries.resume()}</section>
     <section class="guide-recent" id="guide-recent" aria-label="${t('Leituras recentes','Recent readings')}">${recentReading()}</section>

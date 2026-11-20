@@ -42,15 +42,20 @@
   function featured() {
     const cards = ['joao-4','quatro-evangelhos','alianca'];
     const saved = readProgress();
-    return `<section class="guide-section journey-gallery" id="discoveries"><h2>${t('Entre na passagem','Step into the passage')}</h2>
+    const action=id=>saved[id]?.complete?t('Rever percurso','Review journey'):saved[id]?.step>0?t('Retomar percurso','Resume journey'):t('Abrir percurso','Open journey');
+    return `<section class="guide-section journey-gallery" id="discoveries"><h2>${t('Percursos de estudo','Study journeys')}</h2>
+      <div class="workshop-featured">${['fe-e-obras','escutar'].map(id=>{
+        const item=passageJourneys[id];
+        return `<article><h3>${esc(copy(item.title))}</h3><p>${esc(copy(item.question))}</p>${launch(id,action(id))}</article>`;
+      }).join('')}</div>
       <div class="journey-gallery-grid">${cards.map(id => {
         const item = passageJourneys[id];
-        return `<article>${image(item.image)}<div><h3>${esc(copy(item.title))}</h3><p>${esc(copy(item.question))}</p>${launch(id,saved[id]?.complete?t('Rever percurso','Review journey'):saved[id]?.step>0?t('Retomar percurso','Resume journey'):t('Abrir percurso','Open journey'))}</div></article>`;
+        return `<article>${item.image?image(item.image):''}<div><h3>${esc(copy(item.title))}</h3><p>${esc(copy(item.question))}</p>${launch(id,action(id))}</div></article>`;
       }).join('')}</div></section>`;
   }
 
   function questions(query) {
-    const text = window.PoiemaNotesCore.normalize(query).replace(/[^a-z0-9 ]/g,' ');
+    const text = window.PoiemaNotesCore.normalize(query).replace(/[^a-z0-9]+/g,' ').trim();
     const matches = Object.entries(passageJourneys).filter(([,item]) => item.keywords?.[en ? 1 : 0].some(word => text.includes(word)));
     return matches.length ? `<section><h3>${t('Guias para sua pergunta','Guides for your question')}</h3>${matches.map(([id]) => launch(id)).join('')}</section>` : '';
   }
@@ -177,14 +182,61 @@
       ${item.image ? image(item.image,true) : `<aside class="journey-source"><h4>${t('Para continuar','Keep reading')}</h4><div class="guide-links">${item.refs.filter((_,i) => i!==step).map(passage => readLink(passage)).join('')}</div></aside>`}</div>`;
   }
 
+  function faithStep() {
+    if (current.step===1) return `<section><h3>${t('Veja como duas tradições leem os textos','See how two traditions read the texts')}</h3>
+      <p>${t('As leituras abaixo são sínteses de dois documentos confessionais. Abra os versículos e confira como cada fonte descreve fé, graça e obras.', 'The readings below summarize two confessional documents. Open the verses and see how each source describes faith, grace, and works.')}</p>
+      <div class="journey-comparison">${faithPerspectives.map(item=>`<article><h4>${esc(copy(item.title))}</h4><p>${esc(copy(item.text))}</p>
+        <div class="guide-links">${item.refs.map(range=>readLink(range)).join('')}</div><p><a href="${esc(item.source)}" target="_blank" rel="noopener">${esc(copy(item.sourceName))} ↗</a></p></article>`).join('')}</div></section>`;
+    return `<section><h3>${t('Leia as passagens antes de abrir as observações','Read the passages before opening the observations')}</h3>
+      <div class="journey-comparison">${faithReadings.map(item=>`<article><h4>${esc(copy(item.title))}</h4>${textBlock(item.ref,'',item.evidence[0])}
+      ${readLink(item.ref)}<details class="journey-account"><summary>${t('Conferir uma observação','Check an observation')}</summary><p>${esc(copy(item.text))}</p>
+      <div class="guide-links">${item.evidence.map(verse=>readLink([item.ref[0],item.ref[1],verse,verse])).join('')}</div></details></article>`).join('')}</div></section>`;
+  }
+
+  function listeningPractice() {
+    const entry=window.PoiemaNotes?.studyEntries().find(item=>item.practice.track==='escutar');
+    if (!entry) return `<p>${t('Antes da próxima conversa, escolha um gesto de escuta e combine uma data para rever.', 'Before your next conversation, choose one way to listen and pick a date to review it.')}</p>
+      <button type="button" class="guide-passage" data-practice-open="59.1.19.27" data-practice-track="escutar">${t('Escolher meu passo','Choose my step')} ↗</button>`;
+    const done=entry.practice.done;
+    return `<p><strong>${t('Meu passo','My step')}</strong> · ${esc(entry.practice.action)}</p>
+      ${done?`<p>${t('Prática registrada no Caderno.','Practice recorded in your Notebook.')}</p>`:
+        `<button type="button" class="guide-passage" data-practice-review="${esc(entry.id)}">${t('Rever como foi','Review how it went')} ↗</button>`}`;
+  }
+
+  function listeningStep(item) {
+    const range=item.refs[current.step];
+    if (current.step===0) return `<section><h3>${t('Encontro 1 · Antes de falar','Meeting 1 · Before speaking')}</h3>
+      <p>${t('Em Tiago 1:19–22, localize a orientação para ouvir e o que Tiago pede que os ouvintes façam depois.', 'In James 1:19–22, find the instruction about listening and what James asks listeners to do next.')}</p>
+      ${textBlock(range,'',19)}${readLink(range)}</section>`;
+    return `<section><h3>${t('Encontro 2 · Ouça os dois lados','Meeting 2 · Hear both sides')}</h3>
+      <div class="journey-spread"><div><p>${t('Provérbios 18:13 descreve o que acontece quando alguém responde antes de ouvir. O versículo 17 chama atenção para o que muda quando outra versão é ouvida.', 'Proverbs 18:13 describes answering before hearing. Verse 17 draws attention to what can change when another account is heard.')}</p>
+      ${textBlock(range,'',13)}${readLink(range)}</div>
+      <aside class="journey-source"><h4>${t('Na próxima conversa','In your next conversation')}</h4><ol>
+        <li>${t('Faça uma pergunta aberta.','Ask an open question.')}</li>
+        <li>${t('Deixe a pessoa terminar.','Let the person finish.')}</li>
+        <li>${t('Confirme o que entendeu antes de responder.','Check what you understood before answering.')}</li></ol>
+        <div data-listening-practice>${listeningPractice()}</div></aside></div></section>`;
+  }
+
+  function refreshListening() {
+    const box=dialog?.querySelector('[data-listening-practice]');
+    if (dialog?.open && box) box.innerHTML=listeningPractice();
+  }
+
   function reflection(item) {
-    return `<div class="journey-spread"><form class="journey-reflection"><label for="journey-note">${t('O que você descobriu?','What did you discover?')}</label>
+    const prompt=current.id==='escutar'
+      ? t('O que você ouviu desta vez que teria passado despercebido?','What did you hear this time that you might have missed?')
+      : current.id==='fe-e-obras'
+        ? t('Como os dois textos relacionam fé e obras? Cite o versículo que mais ajudou.','How do the passages relate faith and works? Cite the verse that helped most.')
+        : t('O que você descobriu?','What did you discover?');
+    return `<div class="journey-spread"><form class="journey-reflection"><label for="journey-note">${prompt}</label>
       <textarea id="journey-note" required maxlength="4000" rows="5" placeholder="${t('Anote o que chamou sua atenção no texto.','Write down what caught your attention in the text.')}">${esc(current.note)}</textarea>
       <div class="guide-links"><button class="guide-passage" type="submit">${t('Guardar no caderno','Save to notebook')}</button>
         <button class="guide-passage" type="button" data-journey-notebook ${current.saved?'':'hidden'}>${t('Abrir no caderno','Open in notebook')}</button></div>
       <p role="status" data-journey-save-status>${current.saved?t('Descoberta guardada no caderno.','Discovery saved to your notebook.'):''}</p></form>
       <aside class="journey-source"><h4>${t('Passagens ligadas à descoberta','Passages linked to the discovery')}</h4>
-        <div class="guide-links">${item.refs.map(passage => readLink(passage)).join('')}</div></aside></div>`;
+        <div class="guide-links">${item.refs.map(passage => readLink(passage)).join('')}</div>
+        ${current.id==='escutar'?`<div data-listening-practice>${listeningPractice()}</div>`:''}</aside></div>`;
   }
 
   function drawTour(focus=false) {
@@ -193,7 +245,9 @@
     const isEnd = current.step === last;
     const body = isEnd ? reflection(item) : current.id==='joao-4'
       ? [dialogue,worshipMap,waterComparison][current.step]()
-      : current.id==='quatro-evangelhos' ? compareGospels(item) : editorialStep(item,current.step);
+      : current.id==='quatro-evangelhos' ? compareGospels(item)
+      : current.id==='fe-e-obras' ? faithStep()
+      : current.id==='escutar' ? listeningStep(item) : editorialStep(item,current.step);
     dialog.innerHTML = `<header class="guide-dialog-head journey-head"><div><small>${t('Entre na passagem','Step into the passage')}</small><h2 id="journey-title" tabindex="-1">${esc(copy(item.title))}</h2></div>
       ${item.image ? `<img class="journey-head-thumb" src="./scenes/${item.image}" alt="" width="75" height="52">` : ''}
       <form method="dialog"><button aria-label="${t('Fechar percurso','Close journey')}">×</button></form></header>
@@ -204,6 +258,7 @@
         ${tabs(steps,current.step,'data-journey-step',t('Etapas do percurso','Journey steps'))}
         <section class="journey-step-content" tabindex="-1" aria-label="${esc(copy(steps[current.step]))}">${body}</section></div>
       <footer class="journey-footer"><div class="guide-links">
+        ${window.PoiemaWorkshop?.groupLink('journey:'+current.id) || ''}
         <button class="guide-passage" type="button" data-journey-copy>${t('Copiar link do percurso','Copy journey link')}</button>
         ${current.step>0 ? `<button class="guide-passage" type="button" data-journey-step="${current.step-1}">← ${t('Voltar etapa','Previous step')}</button>`:''}
         ${!isEnd ? `<button class="guide-passage journey-next" type="button" data-journey-step="${current.step+1}">${t('Próxima etapa','Next step')} →</button>`:`<button class="guide-passage journey-next" type="button" data-journey-finish>${t('Concluir percurso','Finish journey')} ✓</button>`}
@@ -297,7 +352,7 @@
     const refs = item.refs.map(refName);
     try {
       const text = `${copy(item.question)}\n\n${note}\n\n${t('Passagens','Passages')}: ${refs.join('; ')}`;
-      const id = window.PoiemaNotes.saveDiscovery({title:copy(item.title),text,cites:item.refs.map(([b,c]) => `${b}:${c}`),id:current.saved?.id});
+      const id = window.PoiemaNotes.saveDiscovery({title:copy(item.title),text,cites:item.refs.map(([b,c]) => `${b}:${c}`),id:current.saved?.id,recallReference:item.refs[0]});
       current.saved = {id,note};
       status.textContent = t('Descoberta guardada no caderno.','Discovery saved to your notebook.');
       dialog.querySelector('[data-journey-notebook]').hidden = false;
@@ -403,5 +458,5 @@
     if (selector) panel.querySelector(selector)?.focus({preventScroll:true});
   });
 
-  window.PoiemaDiscoveries = {featured,questions,launch,resume,openFromURL,historyView,attachHistory,detachHistory};
+  window.PoiemaDiscoveries = {featured,questions,launch,resume,openFromURL,historyView,attachHistory,detachHistory,refreshListening};
 })();

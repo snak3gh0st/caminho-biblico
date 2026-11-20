@@ -90,3 +90,50 @@ const exileReadings = [
   {ref:[24,29,4,14],title:['A carta aos exilados','The letter to the exiles'],text:['Jeremias escreve a quem já vive na Babilônia.','Jeremiah writes to people already living in Babylon.']},
   {ref:[15,1,1,5],title:['O início do retorno','The beginning of the return'],text:['Esdras narra o decreto que permite o retorno.','Ezra recounts the decree allowing the return.']}
 ];
+
+Object.assign(passageJourneys,{
+  'fe-e-obras':{
+    title:['Fé, graça e obras','Faith, grace, and works'],
+    question:['A que problema Tiago e Paulo estão respondendo?','What problem are James and Paul addressing?'],
+    keywords:[['fe e obras','fe graca e obras','tiago e paulo','justificacao pela fe'],['faith and works','faith grace and works','james and paul','justification by faith']],
+    steps:[['Leia os dois textos','Read both passages'],['Compare as leituras','Compare interpretations'],['Registre sua conclusão','Record your conclusion']],
+    refs:[[59,2,14,26],[49,2,8,10]],
+  },
+  'escutar':{
+    title:['Escutar antes de responder','Listen before answering'],
+    question:['O que eu ouviria se esperasse um pouco mais antes de responder?','What might I hear if I waited a little longer before responding?'],
+    keywords:[['escutar antes','ouvir antes','aprender a ouvir'],['listen before','listening well','learn to listen']],
+    steps:[['Escute o texto','Listen to the text'],['Experimente numa conversa','Try it in a conversation'],['Volte ao que aconteceu','Revisit what happened']],
+    refs:[[59,1,19,22],[20,18,13,17]],
+  },
+});
+
+const faithReadings = [
+  {
+    title:['Tiago 2. Uma fé que se torna visível','James 2. Faith made visible'],
+    ref:[59,2,14,26], evidence:[14,17,22,24],
+    text:['Tiago pergunta se a fé que alguém afirma ter pode salvar e traz o exemplo de alguém que precisa de roupa e alimento. Nos versículos 21–24, Abraão é um exemplo de fé que atua junto com as obras.','James asks whether the faith someone claims to have can save and offers the example of someone in need of clothing and food. In verses 21–24, Abraham illustrates faith working together with deeds.'],
+  },
+  {
+    title:['Efésios 2. O dom e seu resultado','Ephesians 2. The gift and what follows'],
+    ref:[49,2,8,10], evidence:[8,9,10],
+    text:['Efésios descreve a salvação como dom da graça, recebido por meio da fé. O versículo 10 coloca as boas obras na vida para a qual as pessoas foram criadas em Cristo.','Ephesians describes salvation as a gift of grace received through faith. Verse 10 places good works within the life people were created in Christ to live.'],
+  },
+];
+
+const faithPerspectives = [
+  {
+    title:['Leitura reformada','Reformed perspective'],
+    text:['Westminster descreve a fé como o instrumento pelo qual se recebe a justificação em Cristo. As boas obras acompanham a fé viva. Nessa leitura, Efésios 2:8–10 distingue o dom de seu fruto, e Tiago 2:17–22 ajuda a reconhecer a fé viva.','Westminster describes faith as the instrument through which justification in Christ is received. Good works accompany living faith. In this reading, Ephesians 2:8–10 distinguishes the gift from its fruit, and James 2:17–22 helps identify living faith.'],
+    refs:[[49,2,8,10],[59,2,17,22]],
+    source:'https://www.opc.org/wcf.html',
+    sourceName:['Confissão de Westminster, cap. 11, §§ 1–2','Westminster Confession of Faith, ch. 11, §§ 1–2'],
+  },
+  {
+    title:['Leitura católica','Catholic perspective'],
+    text:['O Catecismo atribui a justificação à obra de Cristo e descreve a resposta humana como cooperação com a graça, iniciada e sustentada pelo Espírito. Comparando os textos, essa leitura destaca a gratuidade em Efésios 2:8–9 e a fé que atua com as obras em Tiago 2:22.','The Catechism attributes justification to the work of Christ and describes the human response as cooperation with grace, initiated and sustained by the Spirit. Reading the passages together, this perspective highlights the gift in Ephesians 2:8–9 and faith working with deeds in James 2:22.'],
+    refs:[[49,2,8,9],[59,2,22,22]],
+    source:'https://www.vatican.va/content/catechism/en/part_three/section_one/chapter_three/article_2.index.html',
+    sourceName:['Catecismo da Igreja Católica, §§ 1992–1993','Catechism of the Catholic Church, §§ 1992–1993'],
+  },
+];

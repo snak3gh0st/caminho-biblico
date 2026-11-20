@@ -1078,3 +1078,51 @@ button.gx-open{margin-top:16px;border:1px solid #444;background:#151515;color:#e
   .practice-catalog-list h3{font-size:1.18rem}
   .practice-catalog-list button{font-size:12px}
 }
+
+/* Study review and printable group guides. */
+.workshop-featured{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:19px}
+.workshop-featured article{padding:19px 20px;border:1px solid #545454;border-radius:8px;background:#171717}
+.workshop-featured h3{margin:0 0 6px;color:#fff;font:1.55rem var(--serif);text-wrap:balance}
+.workshop-featured p{margin:0 0 12px}
+[data-listening-practice]{margin-top:13px}
+[data-listening-practice] p{margin:0 0 7px}
+.workshop-dialog[open]{display:flex;flex-direction:column;width:min(850px,calc(100% - 20px));max-height:calc(100dvh - 20px);overflow:hidden}
+.workshop-head{flex:0 0 auto}
+.workshop-head small{display:block;margin-bottom:3px;color:#cfcfcf}
+.workshop-head h2{font-size:clamp(25px,4vw,42px);line-height:1.08;text-wrap:balance}
+.workshop-body{min-height:0;overflow:auto;overscroll-behavior:contain;padding:18px clamp(13px,3vw,27px);line-height:1.55;color:#ececec}
+.workshop-body h3{margin:0 0 8px;font:1.35rem var(--serif);color:#fff;text-wrap:balance}
+.workshop-body p{margin:0 0 11px;overflow-wrap:anywhere}
+.workshop-dialog .journey-footer{display:flex;gap:6px;flex-direction:column;align-items:flex-end}
+.workshop-dialog .journey-footer>p:empty,.recall-check>[role=status]:empty,.workshop-refs>span{display:none}
+.workshop-dialog .journey-footer input{display:block;width:min(100%,430px);padding:7px 8px;border:1px solid #666;border-radius:5px;background:#131313;color:#eee}
+.workshop-refs{margin-bottom:16px}
+.group-agenda{padding:0;margin:0;list-style:none}
+.group-agenda li{display:grid;grid-template-columns:55px minmax(0,1fr);gap:12px;padding:12px 0;border-top:1px solid #444}
+.group-agenda li>span{color:#d1d1d1;font-weight:700}
+.group-agenda h3{margin-bottom:4px}
+.group-agenda p{margin:0}
+.recall-prompt label{display:block;font-weight:650}
+.recall-prompt textarea{display:block;width:100%;margin-top:7px;padding:10px;border:1px solid #666;border-radius:6px;background:#101010;color:#f1f1f1;font:inherit;resize:vertical}
+.recall-verses{max-height:240px;overflow:auto;padding:9px 12px;border:1px solid #4d4d4d;border-radius:6px;background:#222;font:1.03rem/1.5 Georgia,serif}
+.recall-verses p{margin:0 0 4px}
+.recall-check>small{display:block;margin:5px 0 10px;color:#ccc}
+.recall-check details{margin-top:15px}
+.recall-check details p{margin-top:7px;white-space:pre-line}
+.practice-footer{flex-wrap:wrap}
+@media(max-width:650px){
+  .workshop-featured{grid-template-columns:1fr}
+  .workshop-dialog .journey-footer{align-items:flex-start}
+}
+@media print{
+  body:has(>.group-dialog[open]){background:#fff!important;color:#111!important}
+  body:has(>.group-dialog[open])>:not(.group-dialog){display:none!important}
+  .group-dialog[open]{position:static;display:block;width:auto;max-width:none;max-height:none;margin:0;padding:0;border:0;overflow:visible;color:#111;background:#fff}
+  .group-dialog::backdrop{display:none}
+  .group-dialog .workshop-head,.group-dialog .workshop-body{padding:0;background:#fff;color:#111;overflow:visible}
+  .group-dialog .workshop-head{padding-bottom:12px;margin-bottom:13px;border-bottom:1px solid #aaa}
+  .group-dialog h2,.group-dialog h3,.group-dialog p,.group-dialog small,.group-dialog .group-agenda li>span{color:#111}
+  .group-dialog form,.group-dialog footer,.group-dialog button{display:none!important}
+  .group-dialog .workshop-refs span{display:inline}
+  .group-dialog .group-agenda li{break-inside:avoid;border-color:#aaa}
+}
