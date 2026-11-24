@@ -88,8 +88,8 @@
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}',{maxZoom:10,attribution:'Tiles © Esri'}).addTo(map);
     const names = locations.map(place => en ? place.n : place.pt || place.n);
     const markers = locations.map((place,i) => {
-      const marker = L.marker([place.la,place.lo],{alt:'',title:names[i],keyboard:false}).addTo(map);
-      marker.bindTooltip(esc(names[i]),{direction:'top',offset:[-14,-30]});
+      const marker = L.circleMarker([place.la,place.lo],{radius:8,color:'#161616',weight:2,fillColor:'#e5b86e',fillOpacity:1}).addTo(map);
+      marker.bindTooltip(esc(names[i]),{direction:'top',permanent:locations.length<=4,className:'journey-map-label'});
       return marker;
     });
     map.fitBounds(L.latLngBounds(markers.map(marker => marker.getLatLng())),{padding:[45,40],maxZoom:8});

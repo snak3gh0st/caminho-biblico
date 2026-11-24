@@ -33,6 +33,52 @@
     return map;
   }
 
+  // The passages a reader would be sent to first for each theme, chosen by hand ("book:chapter:from-to").
+  // They come before the passages found by word matching, which can only see shared vocabulary.
+  const KEY_PASSAGES = {
+    faith: '58:11:1-6 45:4:18-25 41:9:14-29 49:2:1-10',
+    grace: '49:2:1-10 45:5:1-11 56:2:11-14 47:12:7-10',
+    forgiveness: '40:18:21-35 19:32:1-5 42:15:11-24 51:3:12-17 62:1:5-10',
+    prayer: '40:6:5-15 42:11:1-13 50:4:4-7 59:5:13-18',
+    hope: '45:8:18-25 60:1:3-9 25:3:19-26 66:21:1-5',
+    suffering: '45:5:1-5 59:1:2-12 47:4:7-18 60:4:12-19 18:1:13-22',
+    fear: '40:6:25-34 50:4:4-9 19:23:1-6 23:41:8-13 60:5:6-11',
+    love: '46:13:1-13 62:4:7-21 43:15:9-17 45:8:31-39',
+    justice: '33:6:6-8 30:5:18-24 23:1:10-20 45:3:21-26',
+    repentance: '19:51:1-12 42:15:11-24 44:2:36-41 29:2:12-17 47:7:8-11',
+    wisdom: '20:1:1-7 20:3:1-12 59:3:13-18 46:1:18-31',
+    covenant: '1:15:1-21 2:19:1-8 24:31:31-34 42:22:14-20 58:8:6-13',
+    kingdom: '41:1:14-20 40:13:31-46 40:5:1-12 27:7:9-14',
+    spirit: '43:14:15-27 44:2:1-13 45:8:1-17 48:5:16-26',
+    church: '44:2:42-47 46:12:12-27 49:4:1-16 58:10:19-25',
+    family: '5:6:4-9 49:5:21-33 49:6:1-4 19:127:1-5 51:3:18-21',
+    work: '51:3:22-25 21:2:18-26 53:3:6-13 20:6:6-11 1:2:4-17',
+    money: '40:6:19-24 54:6:6-19 42:12:13-21 47:9:6-15 20:30:7-9',
+    worship: '19:95:1-7 43:4:19-26 45:12:1-2 66:4:1-11 19:100:1-5',
+    truth: '43:8:31-36 49:4:25-32 20:12:17-22 43:14:1-7',
+    peace: '40:11:25-30 50:4:4-7 43:14:25-31 19:4:1-8 58:4:1-11',
+    joy: '50:4:4-7 19:16:1-11 16:8:9-12 35:3:17-19 43:15:9-17',
+    anger: '49:4:25-32 59:1:19-27 20:15:1-4 40:5:21-26',
+    humility: '50:2:1-11 42:18:9-14 60:5:1-7 59:4:1-10',
+    mercy: '42:10:25-37 19:103:1-14 33:7:18-20 40:9:9-13 25:3:19-26',
+    resurrection: '46:15:1-11 43:11:17-27 42:24:1-12 46:15:50-58',
+    cross: '23:53:1-12 41:15:21-39 45:3:21-26 58:9:11-15 60:2:21-25',
+    promise: '1:12:1-9 47:1:18-22 58:6:13-20 61:3:8-13',
+    exile: '12:25:1-12 19:137:1-9 24:29:4-14 15:1:1-11',
+    shepherd: '19:23:1-6 43:10:1-18 26:34:11-16 42:15:1-7 60:5:1-4',
+    light: '43:1:1-14 43:8:12-20 40:5:13-16 62:1:5-10 19:27:1-6',
+    life: '43:3:1-21 45:10:5-13 49:2:1-10 43:17:1-5 56:3:3-8',
+    obedience: '5:6:1-9 43:14:15-24 59:1:19-27 19:119:1-16 40:7:24-29',
+    sin: '1:3:1-13 45:3:9-26 45:7:14-25 46:10:1-13 40:4:1-11',
+    death: '43:11:17-44 52:4:13-18 19:90:1-12 46:15:50-58 66:21:1-5',
+    mission: '40:28:16-20 44:1:1-11 45:10:9-17 47:5:11-21 42:10:1-12',
+    creation: '1:1:1-31 19:8:1-9 19:19:1-6 51:1:15-20 18:38:1-11',
+    gratitude: '19:100:1-5 42:17:11-19 52:5:12-22 51:3:12-17 19:136:1-9'
+  };
+  function keyPassages(id) {
+    return (KEY_PASSAGES[id] ?? '').split(' ').filter(Boolean).map(item => { const [bookId, chapter, range] = item.split(':'), [from, to] = range.split('-').map(Number); return { bookId: Number(bookId), chapter: Number(chapter), from, to }; });
+  }
+
   // Themes the library speaks about. Words are written in Portuguese and English and stemmed on load.
   const THEME_DEFS = [
     ['faith', ['Fé', 'Faith'], 'fé crer crença confiar confiança faith believe belief trust'],
@@ -73,7 +119,7 @@
     ['mission', ['Missão e testemunho', 'Mission and witness'], 'missão evangelho anunciar testemunho discípulo gospel mission witness disciple'],
     ['creation', ['Criação', 'Creation'], 'criação criar criador creation create creator'],
     ['gratitude', ['Gratidão', 'Gratitude'], 'gratidão agradecer thanks thanksgiving grateful'],
-  ].map(([id, names, words]) => ({ id, names, stems: [...new Set(words.split(/\s+/).map(stem).filter(Boolean))] }));
+  ].map(([id, names, words]) => ({ id, names, stems: [...new Set(words.split(/\s+/).map(stem).filter(Boolean))], key: keyPassages(id) }));
 
   // Book abbreviations in Portuguese and English (accents removed, lower case). Names come from the book list.
   const ABBREVIATIONS = {
@@ -151,6 +197,11 @@
     return out;
   }
 
+  // The study's own title for the part where a hand-picked passage starts.
+  function partTitle(index, item) {
+    const part = index?.parts.find(([bookId, chapter, from, to]) => bookId === item.bookId && chapter === item.chapter && from <= item.from && item.from <= to);
+    return part ? part[4] : '';
+  }
   const sentencesOf = text => String(text ?? '').split(/(?<=[.!?])\s+|\n+/).map(line => line.trim()).filter(Boolean);
   function analyze(text, { books = [], extraBooks = [], index = null, language = 'pt' } = {}) {
     const clean = String(text ?? '').trim();
@@ -171,7 +222,9 @@
       if (!hits.length) continue;
       const score = hits.reduce((sum, word) => sum + 1 + Math.log(counts.get(word)), 0);
       const weights = new Map(theme.stems.map(word => [word, 1]));
-      result.themes.push({ id: theme.id, name: theme.names[language === 'en' ? 1 : 0], score, words: hits.map(word => shown.get(word) ?? word), passages: index ? rank(weights, index, idf, cited, 3) : [] });
+      const chosen = theme.key.filter(item => !cited.has(`${item.bookId}:${item.chapter}`)).slice(0, 3).map(item => ({ ...item, title: partTitle(index, item), shared: [], chosen: true }));
+      const found = index && chosen.length < 3 ? rank(weights, index, idf, new Set([...cited, ...chosen.map(item => `${item.bookId}:${item.chapter}`)]), 3 - chosen.length) : [];
+      result.themes.push({ id: theme.id, name: theme.names[language === 'en' ? 1 : 0], score, words: hits.map(word => shown.get(word) ?? word), passages: [...chosen, ...found] });
     }
     result.themes.sort((a, b) => b.score - a.score);
     result.themes = result.themes.slice(0, 6);

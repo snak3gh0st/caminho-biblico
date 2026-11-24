@@ -81,6 +81,7 @@
         ${window.PoiemaDiscoveries.launch('joao-4',t('Explorar João 4','Explore John 4'))}</div>
         <span class="guide-feature-credit">${t('Ilustração gerada por IA','AI-generated illustration')}</span></article>
     </section>
+    <section class="guide-active-plan ix-progress" id="guide-progress" aria-label="${t('Sua leitura','Your reading')}" ${window.PoiemaInsight?.homeCard() ? '' : 'hidden'}>${window.PoiemaInsight?.homeCard() || ''}</section>
     ${activePlan}
     <section class="guide-active-plan guide-active-journey" id="guide-recall-resume">${window.PoiemaWorkshop?.homeCard() || ''}</section>
     <section class="guide-active-plan guide-active-journey" id="guide-practice-resume">${window.PoiemaPractice?.homeCard() || ''}</section>
@@ -90,6 +91,7 @@
       <h2 id="guide-pathway-title">${t('Escolha o que quer conhecer','Choose what you want to explore')}</h2>
       <article><div><h3>${t('A vida de Jesus','The life of Jesus')}</h3><p>${t('Sete leituras do Evangelho de João, do prólogo à ressurreição.','Seven readings from John, from the prologue to the resurrection.')}</p></div><button class="guide-passage" data-action="start-starter" data-key="jesus">${t('Começar plano','Start plan')} <span aria-hidden="true">→</span></button></article>
       <article><div><h3>${t('A história da Bíblia','The story of the Bible')}</h3><p>${t('Percorra as épocas e veja onde a criação, o exílio, Jesus e a igreja se encaixam.','See where creation, exile, Jesus, and the church fit across the eras.')}</p></div><button class="guide-passage" data-action="explore" data-section="history">${t('Abrir linha do tempo','Open timeline')} <span aria-hidden="true">→</span></button></article>
+      <article><div><h3>${t('Mapas, pessoas e linha do tempo','Maps, people and timeline')}</h3><p>${t('Veja onde cada história acontece, as rotas de Abraão a Paulo e as famílias da Bíblia.','See where each story happens, the journeys from Abraham to Paul and the families of the Bible.')}</p></div><button class="guide-passage" data-action="atlas">${t('Abrir atlas','Open atlas')} <span aria-hidden="true">→</span></button></article>
       <article><div><h3>${t('Estude e leve para a semana','Study and take it into your week')}</h3><p>${t('Entenda um trecho e escolha um passo para praticar e rever no Caderno.','Understand a passage and choose a step to practise and review in your Notebook.')}</p></div><button class="guide-passage" data-action="explore" data-section="study">${t('Ver estudos guiados','Browse guided studies')} <span aria-hidden="true">→</span></button></article>
       <article><div><h3>${t('Como ler cada gênero','How to read each genre')}</h3><p>${t('Experimente ler uma narrativa, um salmo ou uma carta com perguntas que orientam a leitura.','Try a narrative, psalm, or letter with questions to guide your reading.')}</p></div><button class="guide-passage" data-action="explore" data-section="genres">${t('Ver gêneros','Browse genres')} <span aria-hidden="true">→</span></button></article>
     </section>`;
@@ -97,7 +99,7 @@
 
   function bookGroups(testament='all') {
     return guideBookGroups.filter(([,from]) => testament==='all' || (from<=39 ? 'old':'new')===testament)
-      .map(([name,from,to]) => `<section class="guide-book-group"><h3>${esc(title(name))}</h3><div class="guide-links">${books.filter(item => item.id >= from && item.id <= to).map(item => bookLink(item.id)).join('')}</div></section>`).join('');
+      .map(([name,from,to]) => `<section class="guide-book-group"><h3>${esc(title(name))}</h3><div class="guide-links">${books.filter(item => item.id >= from && item.id <= to).map(item => `<span class="ix-book-cell">${bookLink(item.id)}${window.PoiemaInsight?.bookBadge(item.id) || ''}</span>`).join('')}</div></section>`).join('');
   }
 
   function bibleIndex() {
@@ -159,8 +161,11 @@
     if (clean.length < 2) return { hits:[], missing:0 };
     const hits = [];
     let missing = 0;
-    for (let start = 0; start < books.length && hits.length < 12 && revision === searchRevision; start += 5) {
-      const batch = books.slice(start,start+5);
+    // The Gospels, Psalms and the best-known letters are searched first, so a common word does not stop in Genesis.
+    const first = [43,40,42,41,19,45,44,49,50,46,23,20,1,2,58,59,60,62,66];
+    const ordered = [...first.map(id => book(id)).filter(Boolean), ...books.filter(item => !first.includes(item.id))];
+    for (let start = 0; start < ordered.length && hits.length < 36 && revision === searchRevision; start += 5) {
+      const batch = ordered.slice(start,start+5);
       const texts = await Promise.all(batch.map(item => portalBookText(item.id)));
       for (const [index,chapters] of texts.entries()) {
         if (!Object.keys(chapters).length) { missing++; continue; }
@@ -169,13 +174,39 @@
             const normalized = window.PoiemaNotesCore.normalize(line).replace(/[^a-z0-9]+/g,' ');
             if (` ${normalized} `.includes(` ${clean} `)) {
               hits.push({ref:[batch[index].id,Number(chapter),Number(verse)],line});
-              if (hits.length === 12) return {hits,missing};
             }
           }
         }
       }
     }
-    return {hits,missing};
+    const ranked = window.PoiemaInsightCore ? window.PoiemaInsightCore.rankVerses(hits,clean) : hits;
+    return {hits:ranked.slice(0,12),missing};
+  }
+
+  // The best match among people, places and events, shown as a card with what the atlas knows about it.
+  function entityCard(item) {
+    const D = window.PoiemaGraph?.data, kindLabel = ({p:t('Pessoa','Person'),l:t('Lugar','Place'),e:t('Acontecimento','Event')})[item.kind];
+    const entity = D && (item.kind==='p' ? D.person.get(item.id) : item.kind==='l' ? D.place.get(item.id) : D.event.get(Number(item.id)));
+    if (!entity) return '';
+    const codes = D.refs[item.kind][item.id] ?? [], count = new Map();
+    for (const code of codes) { const key = Math.floor(code/1e3); count.set(key,(count.get(key) ?? 0)+1); }
+    const top = [...count].sort((a,b) => b[1]-a[1]).slice(0,4).map(([key]) => [Math.floor(key/1e3),key%1e3]);
+    const years = item.kind==='p' ? window.PoiemaGraph.span(entity.by) + (entity.by!==undefined && entity.dy!==undefined ? ' – ' + window.PoiemaGraph.span(entity.dy) : '') : item.kind==='e' ? window.PoiemaGraph.span(entity.y) : entity.t || '';
+    return `<article class="guide-entity-card"><small>${kindLabel}${years ? ' · ' + esc(years) : ''}</small><h4>${esc(item.label)}</h4>
+      ${entity.ds && !english ? `<p>${esc(entity.ds)}</p>` : ''}
+      <div class="guide-links">${top.map(([bookId,chapter]) => passage([bookId,chapter])).join('')}
+        <button class="guide-passage" data-guide-entity="${esc(item.kind+':'+item.id)}">${item.kind==='l' ? t('Ver no mapa','See on the map') : t('Abrir no atlas','Open in the atlas')} <span aria-hidden="true">↗</span></button></div></article>`;
+  }
+
+  // The reader's own notes that mention the query.
+  function noteResults(query) {
+    const needle = window.PoiemaNotesCore.normalize(query).trim();
+    if (needle.length < 2) return '';
+    let notes = [];
+    try { notes = JSON.parse(localStorage.getItem('poiema-notes-v1'))?.notes ?? []; } catch {}
+    const hits = notes.filter(note => note && typeof note.text==='string' && window.PoiemaNotesCore.normalize((note.title || '') + ' ' + note.text).includes(needle)).slice(0,4);
+    if (!hits.length) return '';
+    return `<section><h3>${t('No seu caderno','In your notebook')}</h3><div class="guide-links">${hits.map(note => `<button class="guide-passage" data-notes-open="${esc(note.id)}">${esc((note.title || note.text.split('\n').find(line => line.trim()) || t('Sem título','Untitled')).slice(0,60))} <span aria-hidden="true">↗</span></button>`).join('')}</div></section>`;
   }
 
   async function runSearch(query) {
@@ -199,10 +230,10 @@
     const questionGuides = window.PoiemaDiscoveries.questions(query);
     result.innerHTML = questionGuides + (bookId ? `<section><h3>${t('Livro', 'Book')}</h3>${bookLink(bookId)}</section>` : '')
       + (themes.length ? `<section><h3>${t('Temas e perguntas', 'Themes and questions')}</h3>${themes.map(theme => `<article><strong>${esc(title(theme.title))}</strong><p>${esc(title(theme.text))}</p>${links(theme.read)}</article>`).join('')}</section>` : '')
-      + '<div data-guide-result="verses"></div><div data-guide-result="entities"></div><div data-guide-result="studies"></div>'
+      + '<div data-guide-result="entities"></div><div data-guide-result="topics"></div>' + noteResults(query) + '<div data-guide-result="studies"></div><div data-guide-result="verses"></div>'
       + '<p role="status">' + t('Buscando na Bíblia…','Searching the Bible…') + '</p>';
 
-    let hasResults = Boolean(bookId || questionGuides || themes.length), incomplete = false;
+    let hasResults = Boolean(bookId || questionGuides || themes.length || noteResults(query)), incomplete = false;
     const isCurrent = () => revision===searchRevision && searchDialog.open;
     const publish = (slot,markup) => {
       if (!isCurrent() || !markup) return;
@@ -216,7 +247,11 @@
         if (verses.hits.length) publish('verses',`<section><h3>${t('No texto bíblico', 'In the Bible text')}</h3><small>${t('Bíblia Portuguesa Mundial', 'World English Bible')}</small>${verses.hits.map(hit => `<article>${passage(hit.ref)}<p>${esc(hit.line)}</p></article>`).join('')}</section>`);
       }),
       window.PoiemaGraph?.find?.(query).then(entities => {
-        if (entities.length) publish('entities',`<section><h3>${t('Pessoas, lugares e acontecimentos', 'People, places, and events')}</h3><div class="guide-links">${entities.slice(0,6).map(item => {
+        // A name must match as a whole word, or as the start of a word when at least five letters were typed ("amor" is not "Amorreu").
+        const asked = ' ' + window.PoiemaNotesCore.normalize(query).replace(/[^a-z0-9]+/g,' ').trim();
+        entities = entities.filter(item => { const label = ' ' + window.PoiemaNotesCore.normalize(item.label).replace(/[^a-z0-9]+/g,' ') + ' '; return label.includes(asked + ' ') || (asked.length > 5 && label.includes(asked)); });
+        const best = entities[0] && window.PoiemaNotesCore.normalize(entities[0].label.replace(/\s*\([^)]*\)/g,'')).split(' ')[0] === window.PoiemaNotesCore.normalize(query).split(' ')[0] ? entities.shift() : null;
+        if (best || entities.length) publish('entities',`<section><h3>${t('Pessoas, lugares e acontecimentos', 'People, places, and events')}</h3>${best ? entityCard(best) : ''}<div class="guide-links">${entities.slice(0,6).map(item => {
           const label = ({p:t('Pessoa','Person'),l:t('Lugar','Place'),e:t('Acontecimento','Event')})[item.kind];
           return `<button class="guide-passage" data-guide-entity="${esc(item.kind+':'+item.id)}"><span>${esc(item.label)} <small>${label}${item.kind==='l'&&item.note?' · '+esc(item.note):''}</small></span><span aria-hidden="true">↗</span></button>`;
         }).join('')}</div></section>`);
@@ -224,6 +259,9 @@
       indexRequest.then(index => {
         if (!isCurrent() || !index) return;
         idf ??= core.idfOf(index);
+        // A word that belongs to one of the study themes (medo → "Medo e ansiedade") brings that theme's passages.
+        const topics = core.THEME_DEFS.filter(theme => words.some(word => theme.stems.includes(word))).slice(0,2);
+        if (topics.length) publish('topics',`<section><h3>${t('Tema', 'Theme')}</h3>${topics.map(theme => `<article><strong>${esc(theme.names[english?1:0])}</strong><div class="guide-links">${(theme.key.length ? theme.key : core.rank(new Map(theme.stems.map(word => [word,1])),index,idf,new Set(),4)).slice(0,5).map(hit => passage([hit.bookId,hit.chapter,hit.from,hit.to])).join('')}</div></article>`).join('')}</section>`);
         const studies = core.rank(new Map(words.map(word => [word,1])),index,idf,new Set(),6);
         if (studies.length) publish('studies',`<section><h3>${t('Nos estudos', 'In the study guides')}</h3>${studies.map(hit => `<article>${passage([hit.bookId,hit.chapter,hit.from,hit.to])} ${esc(hit.title)}</article>`).join('')}</section>`);
       }),

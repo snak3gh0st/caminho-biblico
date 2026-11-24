@@ -10,20 +10,20 @@
     document.querySelector('#app .loading').textContent='Opening your study space…';
     document.querySelector('meta[name="description"]').content='Explore every book of the Bible through scenes, maps, historical context and study notes.';
   }
-  for(const name of ['notes-core','practice-guides','study-practice','guide-content','discovery-content','study-workshop','discoveries','study-guide','guide-reader']){
+  for(const name of ['notes-core','insight-core','insight','practice-guides','study-practice','guide-content','discovery-content','study-workshop','discoveries','study-guide','guide-reader']){
     const script=document.createElement('script');
-    script.async=false;script.src='./'+name+'.js?v=workshop-1';
+    script.async=false;script.src='./'+name+'.js?v=insight-1';
     document.head.append(script);
   }
   for(const name of ['app','portal']){
     const script=document.createElement('script');
-    script.async=false;script.src=(lang==='en'?'./en/':'./')+name+'.js?v=workshop-1';
+    script.async=false;script.src=(lang==='en'?'./en/':'./')+name+'.js?v=insight-1';
     document.head.append(script);
   }
   // The notes area is language-neutral code; it reads the page language itself.
   for(const name of ['notes','graph']){
     const script=document.createElement('script');
-    script.async=false;script.src='./'+name+'.js?v=workshop-1';
+    script.async=false;script.src='./'+name+'.js?v=insight-1';
     document.head.append(script);
   }
 })();

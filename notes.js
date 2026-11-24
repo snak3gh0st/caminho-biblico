@@ -72,7 +72,7 @@
     remember(note, result);
     const parts = [];
     if (result.refs.length) parts.push(`<section><h3>${t('Passagens citadas', 'Passages you cite')}</h3><ul>${result.refs.map(ref => `<li>${link(ref)}</li>`).join('')}</ul></section>`);
-    const named = window.PoiemaGraph?.loaded ? window.PoiemaGraph.entitiesIn(note.text) : null;
+    const named = window.PoiemaGraph?.loaded ? window.PoiemaGraph.entitiesIn(result.refs.reduce((text, ref) => text.replace(ref.raw, ' '), note.text)) : null;
     if (named?.people.length || named?.places.length) parts.push(`<section><h3>${t('Pessoas e lugares citados', 'People and places mentioned')}</h3>${named.people.length ? `<div class="gx-chips">${named.people.map(person => window.PoiemaGraph.personChip(person.i)).join('')}</div>` : ''}${named.places.length ? `<div class="gx-chips">${named.places.map(place => window.PoiemaGraph.placeChip(place.i)).join('')}</div>` : ''}<small>${t('Toque para ver a família, o mapa e as passagens.', 'Tap to see the family, the map and the passages.')}</small></section>`);
     if (result.themes.length) parts.push(`<section><h3>${t('Temas', 'Themes')}</h3>${result.themes.map(theme => `<details><summary><strong>${esc(theme.name)}</strong> <small>${esc(theme.words.join(', '))}</small></summary>${theme.passages.length ? `<ul>${theme.passages.map(item => `<li>${link(item)} <small>${esc(item.title)}</small></li>`).join('')}</ul>` : `<p class="notes-hint">${indexState === 'failed' ? t('O índice de passagens não carregou.', 'The passage index did not load.') : t('Buscando passagens…', 'Looking for passages…')}</p>`}</details>`).join('')}</section>`);
     if (result.related.length) parts.push(`<section><h3>${t('Outras passagens que podem ajudar', 'Other passages that may help')}</h3><ul>${result.related.map(item => `<li>${link(item)} <small>${esc(item.title)}</small><small class="notes-why">${t('Palavras em comum', 'Shared words')}: ${esc(item.shared.slice(0, 4).join(', '))}</small></li>`).join('')}</ul></section>`);
@@ -194,6 +194,18 @@
     if (!notes.length) { newNote(); } else draw(); document.body.classList.add('notes-open');
     await loadReferences(); refreshOrganized(); loadIndex();
     window.PoiemaGraph?.load().then(refreshOrganized).catch(() => {});
+  }
+  // Starts a new note already titled (the reader's "write in the notebook").
+  async function compose({ title = '', text = '' } = {}) {
+    load();
+    const empty = notes.find(note => note.title === title && note.text.trim() === text.trim());
+    if (empty) return open(empty.id);
+    if (notes.length >= 200) return open();
+    const note = { id: (crypto.randomUUID?.() ?? String(Date.now())), title, text, created: Date.now(), updated: Date.now() };
+    notes.unshift(note); persist();
+    await open(note.id);
+    const field = panel?.querySelector('[data-notes-field=text]');
+    if (field) { field.focus({ preventScroll: true }); field.setSelectionRange(field.value.length, field.value.length); }
   }
   function close(restoreFocus = true) {
     if (!panel?.open) return;
@@ -369,5 +381,5 @@
     return saveNotebookEntry({...existing,recall,updated:Date.now()},existing);
   }
 
-  window.PoiemaNotes = {open,close,chapterBlock,saveDiscovery,saveStudy,studyEntries,recallEntries,saveRecall};
+  window.PoiemaNotes = {open,compose,close,chapterBlock,saveDiscovery,saveStudy,studyEntries,recallEntries,saveRecall};
 })();

@@ -149,10 +149,20 @@
     const tabs = [['map', t('Mapa', 'Map')], ['time', t('Linha do tempo', 'Timeline')], ['people', t('Pessoas', 'People')]];
     return `<div class="gx-shell"><header class="gx-head"><h2 id="gx-title">${t('Atlas e conexões', 'Atlas and connections')}</h2><div class="gx-tabs" role="tablist">${tabs.map(([id, label]) => `<button type="button" role="tab" aria-selected="${S.tab === id}" data-gx-tab="${id}">${label}</button>`).join('')}</div><button type="button" data-gx-close aria-label="${t('Fechar', 'Close')}">×</button></header>
       <div class="gx-searchbar"><label>${t('Buscar pessoa, lugar ou acontecimento', 'Search a person, place or event')}<input type="search" data-gx-search autocomplete="off" placeholder="${t('Ex.: Davi, Cafarnaum, o dilúvio', 'E.g. David, Capernaum, the flood')}" value="${esc(S.q)}"></label><div class="gx-results" data-gx-results></div></div>
-      <div class="gx-body gx-body-${S.tab}">${S.tab === 'map' ? `<aside class="gx-side"><label>${t('Mostrar lugares de', 'Show places from')}<select data-gx-book><option value="0">${t('Toda a Bíblia', 'The whole Bible')}</option>${D.books.map(b => `<option value="${b.id}" ${S.book === b.id ? 'selected' : ''}>${esc(b.name)}</option>`).join('')}</select></label><h4>${t('Rotas', 'Journeys')}</h4><div class="gx-chips gx-routes">${D.journeys.map(j => `<button type="button" class="gx-chip" data-gx="j:${esc(j.id)}" aria-pressed="${S.journey === j.id}">${esc(j.title[EN ? 1 : 0])}</button>`).join('') || `<small>${t('Sem rotas ainda.', 'No journeys yet.')}</small>`}</div></aside><div class="gx-map" data-gx-map></div>` : ''}
+      <div class="gx-body gx-body-${S.tab}">${S.tab === 'map' ? `<aside class="gx-side"><label>${t('Mostrar lugares de', 'Show places from')}<select data-gx-book><option value="0">${t('Toda a Bíblia', 'The whole Bible')}</option>${D.books.map(b => `<option value="${b.id}" ${S.book === b.id ? 'selected' : ''}>${esc(b.name)}</option>`).join('')}</select></label><h4>${t('Rotas', 'Journeys')}</h4><div class="gx-routes">${ERAS.map(([id, names]) => { const list = D.journeys.filter(j => j.era === id); return list.length ? `<section><small>${names[EN ? 1 : 0]}</small>${list.map(j => `<button type="button" class="gx-chip" data-gx="j:${esc(j.id)}" aria-pressed="${S.journey === j.id}">${esc(j.title[EN ? 1 : 0])}</button>`).join('')}</section>` : ''; }).join('')}${D.journeys.filter(j => !ERAS.some(([id]) => id === j.era)).map(j => `<button type="button" class="gx-chip" data-gx="j:${esc(j.id)}" aria-pressed="${S.journey === j.id}">${esc(j.title[EN ? 1 : 0])}</button>`).join('')}</div></aside><div class="gx-map" data-gx-map></div>` : ''}
         ${S.tab === 'time' ? `<div class="gx-timeline"><label>${t('Período', 'Period')}<select data-gx-era><option value="">${t('Todos', 'All')}</option>${ERAS.map(([id, names]) => `<option value="${id}" ${S.era === id ? 'selected' : ''}>${names[EN ? 1 : 0]}</option>`).join('')}</select></label><p class="gx-hint">${t('Datas da cronologia tradicional do conjunto Theographic. Consulte as fontes e compare quando houver incerteza.', 'Dates follow the traditional Theographic chronology. Consult sources and compare where dates remain uncertain.')}</p><ol class="gx-events" data-gx-events></ol></div>` : ''}
         ${S.tab === 'people' ? `<div class="gx-peoplelist"><p class="gx-hint">${t('As pessoas mais citadas da Bíblia. Use a busca acima para achar qualquer uma das 3.068.', 'The most mentioned people in the Bible. Use the search above to find any of the 3,068.')}</p><div class="gx-chips">${D.people.filter(p => p.v >= 25).sort((a, b) => b.v - a.v).slice(0, 80).map(p => chip('p', p.i, name(p), String(p.v))).join('')}</div></div>` : ''}
-        <section class="gx-detail" data-gx-detail aria-live="polite"><p class="gx-hint">${t('Escolha um lugar no mapa, uma rota, um acontecimento ou uma pessoa.', 'Pick a place on the map, a journey, an event or a person.')}</p></section></div></div>`;
+        <section class="gx-detail" data-gx-detail aria-live="polite">${intro()}</section></div></div>`;
+  }
+  // What the detail panel offers before anything is chosen: where to start.
+  function intro() {
+    const top = list => list.slice().sort((a, b) => b.v - a.v);
+    const places = top(D.places).slice(0, 10), people = top(D.people.filter(p => p.i !== 'god_1324')).slice(0, 10);
+    return `<header><span class="gx-kind">${t('Comece por aqui', 'Start here')}</span><h3>${t('A Bíblia no mapa e no tempo', 'The Bible on the map and in time')}</h3></header>
+      <p>${t('Toque em um ponto do mapa, escolha uma rota ou busque um nome. Cada lugar, pessoa e acontecimento mostra as passagens que o citam.', 'Tap a point on the map, pick a journey or search a name. Every place, person and event shows the passages that mention it.')}</p>
+      <h4>${t('Lugares mais citados', 'Most mentioned places')}</h4><div class="gx-chips">${places.map(p => chip('l', p.i, name(p), String(p.v))).join('')}</div>
+      <h4>${t('Pessoas mais citadas', 'Most mentioned people')}</h4><div class="gx-chips">${people.map(p => chip('p', p.i, name(p), String(p.v))).join('')}</div>
+      <p class="gx-facts">${D.places.length.toLocaleString(EN ? 'en-US' : 'pt-BR')} ${t('lugares', 'places')} · ${D.people.length.toLocaleString(EN ? 'en-US' : 'pt-BR')} ${t('pessoas', 'people')} · ${D.events.length} ${t('acontecimentos', 'events')} · ${D.journeys.length} ${t('rotas', 'journeys')}</p>`;
   }
   function eras() { return ERAS.find(([id]) => id === S.era); }
   function drawEvents() {
@@ -169,7 +179,7 @@
     if (typeof L === 'undefined') { node.textContent = t('Mapa interativo indisponível.', 'Interactive map unavailable.'); return; }
     map = L.map(node, { preferCanvas: true, minZoom: 3, maxZoom: 12, scrollWheelZoom: true, worldCopyJump: false });
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}', { maxZoom: 13, attribution: 'Tiles © Esri' }).addTo(map);
-    map.fitBounds([[24, 8], [42, 52]]);
+    map.fitBounds([[29.6, 33], [34.4, 38]]);
     layers = { dots: new Map(), journey: L.layerGroup().addTo(map) };
     const inBook = new Set();
     if (S.book) for (const [slug, codes] of Object.entries(D.refs.l)) if (codes.some(code => bookOf(code) === S.book)) inBook.add(slug);
@@ -296,16 +306,16 @@
     // Other chapters that share the rarer people, places and events of this passage (the common ones, like God, tell nothing).
     const mine = new Set([`${bookId}:${chapter}`]), link = new Map();
     const tally = (entities, table, label) => entities.forEach(entity => {
-      const key = entity.i, codes = table[key] ?? []; if (codes.length > 70) return;
+      const key = entity.i, codes = table[key] ?? []; if (codes.length > 45) return;
       const weight = 1 / Math.log2(codes.length + 2);
       for (const code of new Set(codes.map(c => `${bookOf(c)}:${chapterOf(c)}`))) {
         if (mine.has(code)) continue;
         const row = link.get(code) ?? link.set(code, { score: 0, names: [] }).get(code);
-        row.score += weight; row.names.push(label(entity));
+        row.score += weight * (table === D.refs.e ? 3 : 1); row.names.push(label(entity)); if (table === D.refs.e) row.event = true;
       }
     });
     tally(people, D.refs.p, name); tally(placeList, D.refs.l, name); tally(eventList, D.refs.e, eventName);
-    const connected = [...link].sort((a, b) => b[1].score - a[1].score).slice(0, 8);
+    const connected = [...link].filter(([, row]) => row.event || new Set(row.names).size >= 2).sort((a, b) => b[1].score - a[1].score).slice(0, 6);
     if (!people.length && !placeList.length && !eventList.length) return `<p class="gx-hint">${t('Esta passagem não cita pessoas, lugares ou acontecimentos registrados na base.', 'This passage does not mention people, places or events recorded in the data.')}</p>`;
     return `<section class="gx-passage">
       ${when !== undefined ? `<p class="gx-when"><strong>${t('Quando', 'When')}</strong> ${esc(span(years && years[0] !== years[1] ? years[0] : when, years && years[0] !== years[1] ? years[1] : undefined))}</p>` : ''}
@@ -358,5 +368,5 @@
     if (atlas) { event.preventDefault(); open(atlas.dataset.gxBook ? { book: Number(atlas.dataset.gxBook) } : undefined); }
   });
 
-  window.PoiemaGraph = { open, close, load, find: async query => { await load(); return search(query); }, passageHTML, bookPlacesHTML, entitiesIn, get loaded() { return Boolean(D); }, name: item => (item ? name(item) : ''), chip, personChip, placeChip, eventChip };
+  window.PoiemaGraph = { get data() { return D; }, eventName: item => (item ? eventName(item) : ''), span, open, close, load, find: async query => { await load(); return search(query); }, passageHTML, bookPlacesHTML, entitiesIn, get loaded() { return Boolean(D); }, name: item => (item ? name(item) : ''), chip, personChip, placeChip, eventChip };
 })();

@@ -1126,3 +1126,78 @@ button.gx-open{margin-top:16px;border:1px solid #444;background:#151515;color:#e
   .group-dialog .workshop-refs span{display:inline}
   .group-dialog .group-agenda li{break-inside:avoid;border-color:#aaa}
 }
+
+/* Reading journey and in-text connections (public/insight.js). */
+.ix-progress{align-items:center}
+.ix-progress[hidden]{display:none}
+.ix-progress-copy{flex:1;min-width:0}
+.ix-meter{height:6px;max-width:420px;margin-top:12px;border-radius:6px;background:#2c2c2c;overflow:hidden}
+.ix-meter span{display:block;height:100%;border-radius:6px;background:#e5b86e}
+.ix-book-cell{display:inline-flex;align-items:center;gap:6px}
+.ix-book{color:#e5b86e;font-size:11px;font-weight:700;letter-spacing:.02em}
+.ix-book[hidden]{display:none}
+.ix-book-done{color:#9fd49f;font-size:13px}
+
+.ix-context{max-width:62ch;margin:0 auto 14px;border:1px solid #3a3a3a;border-radius:10px;background:#161616;font-family:var(--sans)}
+.ix-context summary{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;padding:11px 14px;cursor:pointer;font-size:13px;color:#cfcfcf}
+.ix-context summary strong{color:#e5b86e;font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.ix-context[open] summary{border-bottom:1px solid #2c2c2c}
+.ix-context h4,.ix-end h4,.ix-sheet h4{margin:14px 14px 6px;font:700 11px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:#b9b9b9}
+.ix-chips,.ix-events{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0 14px;list-style:none}
+.ix-fine{margin:12px 14px;color:#a8a8a8;font:400 12px/1.5 var(--sans)}
+.guide-reader button.ix-chip,.ix-sheet button.ix-chip{min-height:32px;padding:4px 11px;border:1px solid #454545;border-radius:18px;background:#1d1d1d;color:#f0f0f0;font:600 12.5px var(--sans)}
+.guide-reader button.ix-name{display:inline;min-height:0;margin:0;padding:0;border:0;border-radius:2px;background:none;color:inherit;font:inherit;line-height:inherit;text-decoration:underline dotted #e5b86e;text-decoration-thickness:1.5px;text-underline-offset:4px;cursor:pointer}
+.guide-reader button.ix-name:hover,.guide-reader button.ix-name:focus-visible{background:#3a2f18;text-decoration-style:solid}
+
+.ix-end{max-width:62ch;margin:34px auto 10px;padding:18px 18px 16px;border:1px solid #3a3a3a;border-radius:12px;background:#141414;font-family:var(--sans)}
+.ix-end header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px}
+.ix-end h3{margin:0;font-family:var(--serif);font-size:22px}
+.ix-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.guide-reader .ix-end button,.ix-sheet footer button{min-height:42px;padding:8px 13px;border:1px solid #555;border-radius:8px;background:#1f1f1f;color:#f3f3f3;font:700 13px var(--sans)}
+.guide-reader .ix-end button.ix-primary,.ix-sheet footer button.ix-primary{background:#ededed;border-color:#ededed;color:#151515}
+.guide-reader .ix-end button.ix-read{border-radius:20px;min-height:36px;font-size:12px}
+.guide-reader .ix-end button.ix-read[aria-pressed=true]{border-color:#9fd49f;color:#bfe8bf;background:#16241a}
+.ix-related-title{margin:22px 0 2px!important}
+.ix-related-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:4px 22px}
+.ix-related-grid h4{margin:12px 0 6px}
+.ix-related ul,.ix-more{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.ix-related li,.ix-more li{display:flex;flex-direction:column;align-items:flex-start;gap:1px}
+.ix-related small{color:#a8a8a8;font-size:11.5px;line-height:1.4}
+.guide-reader button.ix-link,.ix-sheet button.ix-link{min-height:34px;padding:2px 0;border:0;background:none;color:#f3f3f3;font:700 13.5px var(--sans);text-decoration:underline;text-underline-offset:3px}
+
+.ix-sheet{position:absolute;z-index:6;left:50%;bottom:12px;transform:translateX(-50%);width:min(560px,calc(100% - 20px));max-height:min(70%,560px);overflow:auto;padding:18px 20px 16px;border:1px solid #5a5a5a;border-radius:14px;background:#1b1b1b;color:#f0f0f0;box-shadow:0 18px 60px #000c;font-family:var(--sans)}
+.ix-sheet h3{margin:2px 40px 6px 0;font-family:var(--serif);font-size:25px;line-height:1.15}
+.ix-sheet p{margin:6px 0;font-size:14px;line-height:1.55}
+.ix-sheet .ix-fine{margin:6px 0}
+.ix-sheet h4{margin:14px 0 6px}
+.ix-kind{color:#e5b86e;font-size:10.5px;font-weight:700;letter-spacing:.13em;text-transform:uppercase}
+.ix-sheet .ix-close{position:absolute;top:10px;right:10px;width:38px;height:38px;border:1px solid #555;border-radius:50%;background:#262626;color:#fff;font-size:18px;line-height:1}
+.ix-family{margin:10px 0 0;display:grid;gap:8px}
+.ix-family div{display:grid;grid-template-columns:72px 1fr;gap:8px;align-items:start}
+.ix-family dt{color:#a8a8a8;font-size:12px;padding-top:7px}
+.ix-family dd{margin:0;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ix-sheet footer{margin-top:16px}
+.guide-reader{position:relative}
+
+/* Search: the best match as a card. */
+.guide-search-list .guide-entity-card,.guide-entity-card{padding:14px 16px;margin:6px 0 10px;border:1px solid #4a4a4a;border-radius:10px;background:#181818}
+.guide-entity-card small{color:#e5b86e;font-size:10.5px;font-weight:700;letter-spacing:.13em;text-transform:uppercase}
+.guide-entity-card h4{margin:4px 0 6px;font-family:var(--serif);font-size:24px;font-weight:400}
+.guide-entity-card p{margin:0 0 10px;color:#d4d4d4;line-height:1.55}
+
+/* Atlas: journeys as a list grouped by era; labels on the small history maps. */
+.gx-routes{display:flex;flex-direction:column;gap:12px}
+.gx-routes section{display:flex;flex-direction:column;gap:5px}
+.gx-routes section>small{color:#e5b86e;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.gx-routes .gx-chip{border-radius:8px;text-align:left;justify-content:flex-start;padding:7px 10px}
+.leaflet-tooltip.journey-map-label{background:#161616;border:1px solid #555;color:#fff;font:700 11px var(--sans);box-shadow:none}
+.leaflet-tooltip.journey-map-label::before{display:none}
+@media(max-width:700px){
+ .gx-routes{flex-direction:row;overflow-x:auto;padding-bottom:8px}
+ .gx-routes section{flex:none;flex-direction:row;align-items:center}
+ .gx-routes .gx-chip{flex:none;white-space:nowrap}
+ .ix-sheet{bottom:0;width:100%;border-radius:16px 16px 0 0;max-height:72%}
+ .ix-family div{grid-template-columns:60px 1fr}
+}
+
+.ix-sheet .ix-flush{padding:0}

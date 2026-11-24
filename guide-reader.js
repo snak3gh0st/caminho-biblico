@@ -165,6 +165,8 @@
     if (parallel.status === 'rejected') status.textContent = t('A tradução para comparação está indisponível.', 'The comparison translation is unavailable.');
     const paired = alt && alt.versionName !== text.versionName;
     body.innerHTML = `${paired ? `<div class="guide-compare-labels"><strong>${esc(text.versionName)}</strong><strong>${esc(alt.versionName)}</strong></div>` : ''}<div class="guide-reader-lines ${paired?'guide-reader-paired':''}">${lines.map(([n,line]) => `<div data-reader-row="${n}" class="${n>=target.from && n<=target.to?'guide-reading-range':''}"><p><button type="button" data-reader-verse="${n}" aria-label="${t('Selecionar versículo','Select verse')} ${n}" aria-pressed="${Number(n)===selected}">${n}</button>${esc(line)}</p>${paired ? `<p>${esc(alt.verses[n] || '—')}</p>` : ''}</div>`).join('')}</div><div class="guide-reader-credit">${credit(text)}${paired?credit(alt):''}</div>`;
+    // Names, the chapter's context and the end-of-chapter steps are layered on by public/insight.js.
+    window.PoiemaInsight?.decorate(dialog, target);
     target.verse = selected;
     const row = body.querySelector(`[data-reader-row="${selected}"]`);
     if (row) {
